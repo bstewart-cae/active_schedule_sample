@@ -1,0 +1,59 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "include": [
+    "z-wave-stack/CMakePresets.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "ARM",
+      "hidden": true,
+      "inherits": [
+        "default"
+      ],
+      "toolchainFile": "${fileDir}/platform/TridentIoT/arm-gcc-toolchain.cmake",
+      "cacheVariables": {
+        "LINKER_SCRIPT_PATH":"${fileDir}/platform/TridentIoT/linkerscript/tridentiot_gcc_cm3_mcu.ld"
+      }
+    },
+    {
+      "name": "T32CZ20",
+      "hidden": true,
+      "inherits": [
+        "default"
+      ],
+      "toolchainFile": "${fileDir}/platform/TridentIoT/arm-gcc-toolchain-T32CZ20.cmake",
+      "cacheVariables": {
+        "LINKER_SCRIPT_PATH":"${fileDir}/platform/TridentIoT/linkerscript/tridentiot_gcc_T32CZ20.ld"
+      }
+    },
+    {
+      "name": "T32CZ20.Debug",
+      "inherits": [
+        "T32CZ20",
+        "Debug"
+      ]
+    },
+    {
+      "name": "T32CZ20.Release",
+      "inherits": [
+        "T32CZ20",
+        "Release"
+      ]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "T32CZ20.Debug",
+      "configurePreset": "T32CZ20.Debug"
+    },
+    {
+      "name": "T32CZ20.Release",
+      "configurePreset": "T32CZ20.Release"
+    }
+  ]
+}

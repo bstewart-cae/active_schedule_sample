@@ -1,0 +1,8 @@
+/**
+@page zniffer Zniffer
+
+@section zniffer_interface Interface on the DKNCZ20 board
+
+The Zniffer API is accessible via UART through the USB connector. The configuration of the UART is: 230400-8-N-1
+
+*/

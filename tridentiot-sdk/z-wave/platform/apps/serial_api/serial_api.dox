@@ -1,0 +1,23 @@
+/**
+@page serial_api Serial API sample application
+
+[TOC]
+
+\include{doc} app_serialapi.dox
+
+@section DKNCZ20_serial_api_interface Interface on the DKNCZ20 board
+
+The Serial API is accessible via UART through the USB connector. The configuration of the UART is: 115200-8-N-1
+
+@section manufacturer_info Manufacturer Info
+
+Serial API supports a command named "Get Manufacturer Info" (0xEA).
+
+This command contains a manufacturer specific chip info field that Trident IoT defines as the following:
+
+- Manufacturer Specific Chip Info byte 1: Chip type
+- Manufacturer Specific Chip Info byte 2: Chip revision
+
+The chip type and revision aligns with the values in the "Get Init Data" command (0x02).
+
+*/

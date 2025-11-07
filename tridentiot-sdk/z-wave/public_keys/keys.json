@@ -1,0 +1,14 @@
+{
+    "TR_MFG_TOKEN_SIGNED_BOOTLOADER_KEY_X": {
+        "value": "0x2B A0 8C 63 DA B1 A8 7F CE 1A 42 BB 95 CA 25 2A 72 DF 8E 1E 81 61 A6 43 29 28 1F 21 49 23 F7 EF",
+        "value_type": "hex"
+    },
+    "TR_MFG_TOKEN_SIGNED_BOOTLOADER_KEY_Y": {
+        "value": "0xF4 30 E8 C4 0D F2 90 CF A7 43 52 74 6D 56 78 69 FA D5 4E 22 4A D8 79 85 DD 60 AD E7 1C 92 2C 67",
+        "value_type": "hex"
+    },
+    "TR_MFG_TOKEN_BOOTLOAD_AES_KEY": {
+        "value": "0xDE D4 7C 21 6C BC AB 5D A8 38 AE FE B5 25 C9 69",
+        "value_type": "hex"
+    }
+}

@@ -1,0 +1,319 @@
+// SPDX-FileCopyrightText: 2025 Trident IoT, LLC <https://www.tridentiot.com>
+// SPDX-License-Identifier: LicenseRef-TridentMSLA
+
+/**
+
+@page radio_cli Radio CLI
+
+@section radio_CLI_introduction Radio CLI basics
+
+The Radio CLI tool can be used to test the radio functionality of a Z-Wave board
+
+@subsection radio_CLI_introduction_uart UART configuration
+
+Default UART configuration uses UART0 (pin 16,17) set to 230400,N,8,1
+The UART configuration can be changed but requires a recompilation of the project.
+
+@subsection radio_CLI_introduction_using Using the Radio CLI test tool
+
+1. Program the binary to a Z-Wave chip
+2. Connect to the chip with a terminal program set to the correct UART and configuration
+3. Type help for a list of commands
+
+@section radio_CLI_use_examples Examples of using the Radio CLI
+
+Here are some examples of setting up Z-Wave in the radio CLI
+
+@subsection radio_CLI_use_transmit_us Transmitting a frame on us region at 100kbps
+
+Setting up the radio for the US region and transmit a default frame at the 100kbps channel with Tx power 0dBm
+
+@code
+> zw-region-set 1
+> zw-homeid-set 0x11111111
+Setting homeID to 11111111
+> zw-init
+Radio firmware version=0000036B
+Z-Wave Radio initialized to Region 1, Tx channel 0
+> zw-nodeid-set 2
+Setting nodeID to 2
+> zw-tx-channel-set 0
+  Using default payload
+Tx channel 0
+> zw-tx-power-set 0
+> tx 1
+Transmit region=1, ch=0 (0), cnt=1, delay=100ms
+Transmit complete, 1 success, 0 failed, 0 lbt_failed
+@endcode
+
+This should transmit one frame on the US region 100kbps frequency
+
+@subsection radio_CLI_use_transmit_us_carrier Transmitting a constant carrier on us region at the 100kbps frequency
+
+The Radio Test Tool can be setup to enable a continuous unmodulated carrier signal on a specific channel in a specific Z-Wave region.
+This example makes a continuous unmodulated carrier signal on Z-Wave region US_LR, channel 0 (100kbit GFSK channel).
+
+@code
+> zw-region-set 9
+Region 9, Tx channel 0
+> zw-init
+Radio firmware version=0000036B
+Z-Wave Radio initialized to Region 9, Tx channel 0
+> zw-tx-channel-set 0
+  Using default payload
+Tx channel 0
+> zw-tx-power-set 0
+> tx 1
+Transmit region=9, ch=0 (0), cnt=1, delay=100ms
+Transmit complete, 1 success, 0 failed, 0 lbt_failed
+> rx off
+Rx off - Received 0 frames
+> zw-radio-tx-continues-set on 0
+Continuous carrier transmit mode enabled
+@endcode
+
+This should enable a measurable unmodulated carrier signal at 916 MHz
+
+To stop carrier signal do a power off/reset of device
+
+@subsection radio_CLI_use_radio_gpio Using GPIO's to show radio state
+
+Using Radio Test Tool for determining which state the RF radio is in by routing radio state to GPIO pins
+
+@code
+> zw-radio-rf-debug-set on
+  Reset module to put the new rf state gpio settings into effect
+> reset
+Radio firmware version=0000036B
+
+RF Rx and Tx state on GPIO 21 and 28 enabled - 1 = active
+RF MCU state on GPIO 0 enabled - 1 = active, 0 = sleep
+
+Trident Radio Test CLI version 0.5.2 git hash 57e6ae1a
+Radio firmware version=0000036B
+Current Z-Wave Region 9
+Current Tx max power setting 14dBm
+@endcode
+
+To turn the radio debug feature off again use the command
+
+@code
+> zw-radio-rf-debug-set off
+zw-radio-rf-debug-set off
+  Reset module to put the new rf state gpio settings into effect
+> reset
+Trident Radio Test CLI version 0.5.2 git hash 57e6ae1a
+Current Z-Wave Region 9
+Current Tx max power setting 14dBm
+@endcode
+
+@section radio_CLI_user_interface User Interface for the Radio CLI test tool
+
+The following commands can be used in the Radio CLI tool
+
+@subsection radio_CLI_commands Supported commands
+
+<table>
+  <tr>
+    <th>Command</th>
+    <th>Parameters</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>zw-region-set</td>
+    <td>Region (0-103) - Region number</td>
+    <td>Set the desired Z-Wave region. Supported region numbers can be shown by running the zw-region-list command</td>
+  </tr>
+  <tr>
+    <td>zw-region-list</td>
+    <td>n/a</td>
+    <td>Lists current region and all supported regions</td>
+  </tr>
+  <tr>
+    <td>zw-init</td>
+    <td>n/a</td>
+    <td>Initialize the Z-Wave PHY layer to the region specified with the zw-region-set command</td>
+  </tr>
+  <tr>
+    <td>zw-homeid-set</td>
+    <td>HomeID (hexadecimal) - HomeID for receive filtering </td>
+    <td>Set the desired Z-Wave HomeID for use in receive filtering</td>
+  </tr>
+  <tr>
+    <td>zw-nodeid-set</td>
+    <td>NodeID (decimal) - NodeID for receive filtering</td>
+    <td>Set the desired Z-Wave nodeID for receive filtering</td>
+  </tr>
+  <tr>
+    <td>zw-tx-payload-set</td>
+    <td>payload (hexadecimal)</td>
+    <td>Set the frame payload in hexadecimal bytes, If fewer than 9 bytes are provided, the default payload will be used</td>
+  </tr>
+  <tr>
+    <td>zw-tx-channel-set</td>
+    <td>Channel (0-3) - Channel number. Actual channel range follows region setup</td>
+    <td>Set the transmit channel number</td>
+  </tr>
+  <tr>
+    <td>zw-tx-power-set</td>
+    <td>Tx power (-20 to +20 dBm).<br>Optional: powerindex to map Tx power to radio power index until next reset</td>
+    <td>Set the transmit power</td>
+  </tr>
+  <tr>
+    <td>zw-tx-power-index-list</td>
+    <td>n/a</td>
+    <td>List current active Tx power to radio powerindex conversion table - for current selected region and channel</td>
+  </tr>
+  <tr>
+    <td>zw-classic-tx-power-enable</td>
+    <td>Classic Z-Wave Tx power control on none lr channels (on/off) - if on then Tx power on none lr channels are set through classic Tx power settings</td>
+    <td>Enable/disable usage of classic Z-Wave Tx power settings on none lr channels</td>
+  </tr>
+  <tr>
+    <td>zw-classic-tx-power-set</td>
+    <td>Classic Z-Wave Tx power in dBm (-20-+20) - used on none lr channels if classic Z-Wave Tx power feature is enabled</td>
+    <td>Set classic Z-Wave Tx power 'normal' setting</td>
+  </tr>
+  <tr>
+    <td>zw-classic-tx-power-adjust-set</td>
+    <td>Classic Z-Wave Tx power adjust in dBm (-5-+5) - used on none lr channels if classic Z-Wave Tx power feature is enabled</td>
+    <td>Set classic Z-Wave channel power measured at a PA setting of 0dBm</td>
+  </tr>
+  <tr>
+    <td>zw-classic-tx-power-attenuation-set</td>
+    <td>Classic Z-Wave Tx power attenuation in dBm (0-20) - used on none lr channels if classic Z-Wave Tx power feature is enabled</td>
+    <td>Set classic Z-Wave Tx power setting attenuation </td>
+  </tr>
+  <tr>
+    <td>zw-tx-lbt-set</td>
+    <td>LBT threshold (-127-0) - Set LBT level in dBm, 0 equals LBT is turned off</td>
+    <td>Set the transmit Listen Before Talk threshold</td>
+  </tr>
+  <tr>
+    <td>zw-stats-get</td>
+    <td>n/a</td>
+    <td>Get network statistics from the PHY layer</td>
+  </tr>
+  <tr>
+    <td>zw-stats-clear</td>
+    <td>n/a</td>
+    <td>Clear the network statistics and set all counters to 0</td>
+  </tr>
+  <tr>
+    <td>zw-tx-delay-set</td>
+    <td>delay (2-65535) - Interframe delay in ms</td>
+    <td>Set delay between transmitted frames when sending multiple frames</td>
+  </tr>
+  <tr>
+    <td>zw-rx-channel-set</td>
+    <td>Single channel (on/off) - Single channel mode<br>Channel number (0-3) - Fixed channel</td>
+    <td>Switch between single channel and channel scanning mode.<br>Single channel on → disables scanning, fixes receiver to specified channel<br>Single channel off → enables channel scanning</td>
+  </tr>
+  <tr>
+    <td>zw-tx-max-power-set</td>
+    <td>max Tx power (14/20) - Max Tx power in dBm supported by the radio board</td>
+    <td>Set the max Tx power supported by the radio board. This command will only take effect after a reset command</td>
+  </tr>
+  <tr>
+    <td>zw-radio-tx-continues-set</td>
+    <td>state (on/off) - Set the transmit of continuous signal wave on/off<br>Signal wave type (0/1/2)<br> - 0 = unmodulated<br> - 1 = modulated<br> - 2 = modulated with whitening</td>
+    <td>Transmit an unmodulated, modulated or modulated with whitening signal wave. It is recommended to reset the module with the reset command after having sent a continuous signal wave</td>
+  </tr>
+  <tr>
+    <td>zw-radio-rf-debug-set</td>
+    <td>Debug mode (on/off) - Turn radio debug mode on or off</td>
+    <td>Set the radio debug mode on or off<br>Pins used:<br>RF Rx state on GPIO 21<br>RF Tx state on GPIO 28<br>RF MCU state on GPIO 0</td>
+  </tr>
+  <tr>
+    <td>zw-radio-rf-debug-reg-setting-list</td>
+    <td>List radio register settings [0/1] - List selected radio register settings and optionally an extended number of radio register settings</td>
+    <td>List radio register settings, if parameter equals 1 list extended number of radio register settings</td>
+  </tr>
+  <tr>
+    <td>zw-radio-rssi-get</td>
+    <td>channel (0-1[2][3]) - Get measured RSSI on channel<br>count - optional count times<br>delay ms - optional delay ms inbetween</td>
+    <td>Get last measured RSSI on channel, optional count times with optional delay ms inbetween (default 1000ms)</td>
+  </tr>
+  <tr>
+    <td>zw-radio-rssi-get-all</td>
+    <td>count - optional count times<br>delay ms - optional delay ms inbetween</td>
+    <td>Get last RSSI measurement on all region channels, optional count times with optional delay ms inbetween (default 1000ms)</td>
+  </tr>
+  <tr>
+    <td>zw-radio-rssi-config-set</td>
+    <td>sample_freq - sample frequency in ms<br>average_count - number of samples for doing RSSI average</td>
+    <td>Setup RSSI noise level to be sampled every sample_freq ms and generate an average out of average_count samples. Disable with 'zw-radio-rssi-config-set 0 0'</td>
+  </tr>
+  <tr>
+    <td>tx</td>
+    <td>repeat - number of times the frame should be transmitted</td>
+    <td>Send repeat frames</td>
+  </tr>
+  <tr>
+    <td>rx</td>
+    <td>Rx mode (on/off) - Receive mode</td>
+    <td>Set the receiver on or off</td>
+  </tr>
+  <tr>
+    <td>timestamp</td>
+    <td>enable <on/off> - enable/disable timestamp in ms</td>
+    <td>Enable/Disable timestamp in ms on line output</td>
+  </tr>
+  <tr>
+    <td>reset</td>
+    <td>n/a</td>
+    <td>Perform a soft reset of the radio board</td>
+  </tr>
+  <tr>
+    <td>script</td>
+    <td>cmd<br> - autoon [1-5] - enable active or specified script run on startup<br> - autooff [1-5] - disable active or specified script run on startup<br> - start [1-5] - start active or specified script entry<br> - stop - stop running script at next scriptline<br> - list [1-5] - list all or specified script<br> - clear [1-5] - clear active or specified script</td>
+    <td>Script handling makes it possible for running several commands autonomously</td>
+  </tr>
+  <tr>
+    <td>run</td>
+    <td>number [1-5] - optional script number to run</td>
+    <td>Run active script or specified script number</td>
+  </tr>
+  <tr>
+    <td>wait</td>
+    <td>time - number of milliseconds before next scriptline should be executed</td>
+    <td>Wait some time before executing the next scriptline - only useful in a script</td>
+  </tr>
+  <tr>
+    <td>status</td>
+    <td>n/a</td>
+    <td>Get current status</td>
+  </tr>
+  <tr>
+    <td>gpio-pulse</td>
+    <td>Pin number (required)<br>Pulse width in ms (required)</td>
+    <td>Create a pulse of the given milliseconds on the given pin.<br>Example for 150 ms on pin 4: <pre>gpio-pulse 4 150</pre></td>
+  </tr>
+  <tr>
+    <td>gpio-output</td>
+    <td>Pin number (required)<br> Output level high/low (optional)</td>
+    <td>Set to output the pin at the given level, default level value is low.<br>Example to set pin 4 to high: <pre>gpio-output 4 high</pre></td>
+  </tr>
+  <tr>
+    <td>gpio-input</td>
+    <td>Pin number (required)<br> Pull-up option <pull-up=on/off> (optional)</td>
+    <td>Set pin as input with the given pull-up option, default is pull-up on (10K).<br>Example to set pin 5 as input with pull-up on: <pre>gpio-input 5 pull-up=on</pre></td>
+  </tr>
+  <tr>
+    <td>gpio-set</td>
+    <td>Pin number (required)<br> Output level high/low (required)</td>
+    <td>Set an output pin at the given level.<br>Example to set pin 1 to low: <pre>gpio-set 1 low</pre></td>
+  </tr>
+  <tr>
+    <td>gpio-get</td>
+    <td>Pin number (required)</td>
+    <td>Get the current level of the given pin.<br>Example to get level of pin 1: <pre>gpio-get 1</pre></td>
+  </tr>
+  <tr>
+    <td>version</td>
+    <td>n/a</td>
+    <td>Get the version of the Radio CLI tool and the radio firmware</td>
+  </tr>
+</table>
+
+*/

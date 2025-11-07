@@ -1,0 +1,29 @@
+{
+    "configurations": [
+        {
+            "name": "T32CZ20",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/app",
+                "${workspaceFolder}/tridentiot-sdk/**"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "${workspaceFolder}/app",
+                    "${workspaceFolder}/tridentiot-sdk/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "defines": [
+                "TR_PLATFORM_T32CZ20",
+                "ZW_slave_lib"
+            ],
+            "intelliSenseMode": "${default}",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17"
+        }
+    ],
+    "version": 4
+}

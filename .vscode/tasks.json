@@ -1,0 +1,131 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "[Trident-IoT] Build (Debug)",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "build",
+                "--debug",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "[Trident-IoT] Build (Release)",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "build",
+                "--release",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "[Trident-IoT] Clean Build",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "build",
+                "--clean",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "[Trident-IoT] Check Build System",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "doctor"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "[Trident-IoT] Discover Attached Devboards",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "device",
+                "discover",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "[Trident-IoT] Flash Hexfile",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "flash",
+                "--usb",
+                "EditVsCodeTasksJsonToAddDevboardSerialNumber"// Run [Trident-IoT] Discover Attached Devboards task, or manually with "elcap device discover" in the terminal, or check devboard label for serial number
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "[Trident-IoT] Get Tokens (Z-Wave QR-Code / DSK)",
+            "type": "shell",
+            "command": "elcap",
+            "args": [
+                "tokens",
+                "read",
+                "--usb"
+                "EditVsCodeTasksJsonToAddDevboardSerialNumber"// Run [Trident-IoT] Discover Attached Devboards task, or manually with "elcap device discover" in the terminal, or check devboard label for serial number
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}

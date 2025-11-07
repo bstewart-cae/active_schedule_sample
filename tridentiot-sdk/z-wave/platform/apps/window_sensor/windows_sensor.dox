@@ -1,0 +1,77 @@
+/**
+@page window_sensor Window Sensor sample application
+
+[TOC]
+
+\include{doc} app_windowsensor.dox
+
+@section window_sensor_user_interface User Interface on the DKNCZ20 board
+
+@subsection window_sensor_buttons Buttons
+
+<table>
+  <tr>
+    <th>Button</th>
+    <th>Action</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>BTN0</td>
+    <td>Press</td>
+    <td>Resets the chip.</td>
+  </tr>
+  <tr>
+    <td rowspan="2">BTN1</td>
+    <td>Press</td>
+    <td>Toggles learn mode.</td>
+  </tr>
+  <tr>
+    <td>Hold (5sec)</td>
+    <td>Resets the application to factory settings.</td>
+  </tr>
+  <tr>
+    <td>BTN2</td>
+    <td>Press</td>
+    <td>Send a battery report.</td>
+  </tr>
+</table>
+
+@subsection window_sensor_leds LEDs
+
+<table>
+  <tr>
+    <th>LED</th>
+    <th>Behavior</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td rowspan="2">Green</td>
+    <td>Flashing</td>
+    <td>Learn mode is active.</td>
+  </tr>
+  <tr>
+    <td>Off</td>
+    <td>Learn mode is inactive.</td>
+  </tr>
+</table>
+
+@subsection window_sensor_gpio Window Sensor GPIOs
+
+<table>
+  <tr>
+    <th>GPIO</th>
+    <th>Behavior</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td rowspan="2">GPIO0</td>
+    <td>Low</td>
+    <td>Window is Open</td>
+  </tr>
+  <tr>
+    <td>High</td>
+    <td>Window is close</td>
+  </tr>
+</table>
+
+*/

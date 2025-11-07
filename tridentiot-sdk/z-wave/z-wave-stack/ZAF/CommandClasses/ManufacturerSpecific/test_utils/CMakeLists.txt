@@ -1,0 +1,3 @@
+add_library(CC_ManufacturerSpecific_test_utils CC_ManufacturerSpecific_test_utils.cpp)
+target_link_libraries(CC_ManufacturerSpecific_test_utils PUBLIC test_common)
+target_include_directories(CC_ManufacturerSpecific_test_utils PUBLIC ".")

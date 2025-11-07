@@ -1,0 +1,10 @@
+/**
+@page radio_cli Radio CLI
+
+@section radio_cli_user_interface User Interface on the DKNCZ20 board
+
+The UART is by default set up to 230400,8,N,1
+
+The supported commands can be seen by writing help on the terminal
+
+*/

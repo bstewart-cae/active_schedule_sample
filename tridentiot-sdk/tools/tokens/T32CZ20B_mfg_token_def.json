@@ -1,0 +1,110 @@
+{
+    "TR_MFG_TOKEN_VERSION": {
+        "address": "0x100fe000",
+        "size": "0x2"
+    },
+    "TR_MFG_TOKEN_CUSTOM_EUI": {
+        "address": "0x100fe002",
+        "size": "0x8"
+    },
+    "TR_MFG_TOKEN_MFG_NAME": {
+        "address": "0x100fe00a",
+        "size": "0x20"
+    },
+    "TR_MFG_TOKEN_MODEL_NAME": {
+        "address": "0x100fe02a",
+        "size": "0x20"
+    },
+    "TR_MFG_TOKEN_HW_VERSION": {
+        "address": "0x100fe04a",
+        "size": "0x1"
+    },
+    "TR_MFG_TOKEN_MANUF_ID": {
+        "address": "0x100fe04b",
+        "size": "0x2"
+    },
+    "TR_MFG_TOKEN_SERIAL_NUM": {
+        "address": "0x100fe04d",
+        "size": "0x8"
+    },
+    "TR_MFG_TOKEN_XTAL_TRIM": {
+        "address": "0x100fe055",
+        "size": "0x2"
+    },
+    "TR_MFG_TOKEN_PHY_CONFIG": {
+        "address": "0x100fe057",
+        "size": "0x2"
+    },
+    "TR_MFG_TOKEN_CCA_THRESHOLD": {
+        "address": "0x100fe059",
+        "size": "0x2"
+    },
+    "TR_MFG_TOKEN_CBKE_DATA": {
+        "address": "0x100fe05b",
+        "size": "0x5c"
+    },
+    "TR_MFG_TOKEN_INSTALLATION_CODE": {
+        "address": "0x100fe0b7",
+        "size": "0x14"
+    },
+    "TR_MFG_TOKEN_DISTRIBUTED_KEY": {
+        "address": "0x100fe0cb",
+        "size": "0x10"
+    },
+    "TR_MFG_TOKEN_SECURITY_CONFIG": {
+        "address": "0x100fe0db",
+        "size": "0x2"
+    },
+    "TR_MFG_TOKEN_CBKE_283K1_DATA": {
+        "address": "0x100fe0dd",
+        "size": "0x94"
+    },
+    "TR_MFG_TOKEN_NVM_CRYPTO_KEY": {
+        "address": "0x100fe171",
+        "size": "0x10"
+    },
+    "TR_MFG_TOKEN_BOOTLOAD_AES_KEY": {
+        "address": "0x100fe181",
+        "size": "0x10"
+    },
+    "TR_MFG_TOKEN_SECURE_BOOTLOADER_KEY": {
+        "address": "0x100fe191",
+        "size": "0x10"
+    },
+    "TR_MFG_TOKEN_SIGNED_BOOTLOADER_KEY_X": {
+        "address": "0x100fe1a1",
+        "size": "0x20"
+    },
+    "TR_MFG_TOKEN_SIGNED_BOOTLOADER_KEY_Y": {
+        "address": "0x100fe1c1",
+        "size": "0x20"
+    },
+    "TR_MFG_TOKEN_SERIAL_BOOT_DELAY_SEC": {
+        "address": "0x100fe1e1",
+        "size": "0x1"
+    },
+    "TR_MFG_TOKEN_THREAD_JOIN_KEY": {
+        "address": "0x100fe1e2",
+        "size": "0x22"
+    },
+    "TR_MFG_TOKEN_ZWAVE_COUNTRY_FREQ": {
+        "address": "0x100fe204",
+        "size": "0x1"
+    },
+    "TR_MFG_TOKEN_ZWAVE_INITIALIZED": {
+        "address": "0x100fe205",
+        "size": "0x1"
+    },
+    "TR_MFG_TOKEN_ZWAVE_QR_CODE": {
+        "address": "0x100fe206",
+        "size": "0x6a"
+    },
+    "TR_MFG_TOKEN_ZWAVE_PUK": {
+        "address": "0x100fe270",
+        "size": "0x20"
+    },
+    "TR_MFG_TOKEN_ZWAVE_PRK": {
+        "address": "0x100fe290",
+        "size": "0x20"
+    }
+}

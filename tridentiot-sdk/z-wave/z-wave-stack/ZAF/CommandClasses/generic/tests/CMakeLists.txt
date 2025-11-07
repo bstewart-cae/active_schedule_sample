@@ -1,0 +1,153 @@
+include_directories( .. )
+
+add_compile_definitions(ZW_SLAVE_ENHANCED_232)
+
+################################################################################
+# Add generic test of Command Classes.
+################################################################################
+
+set(test_generic_src
+  test_generic.cpp
+  ${ZAF_CCDIR}/ZWavePlusInfo/src/CC_ZWavePlusInfo.c
+  ${ZAF_CCDIR}/ZWavePlusInfo/src/cc_zwave_plus_info_config_api.c
+  ${ZAF_CCDIR}/Association/src/CC_Association.c
+  ${ZAF_CCDIR}/Association/src/CC_AssociationGroupInfo.c
+  ${ZAF_CCDIR}/Association/src/CC_MultiChanAssociation.c
+  ${ZAF_CCDIR}/Association/src/association_plus.c
+  ${ZAF_UTILDIR}/_commonIF/ZAF_Common_interface.c
+  ${ZAF_CCDIR}/Basic/src/CC_Basic.c
+  ${ZAF_CCDIR}/Battery/src/CC_Battery.c
+  ${ZAF_CCDIR}/Battery/src/cc_battery_nvm.c
+  ${ZAF_CCDIR}/Battery/src/cc_battery_config_api.c
+  ${ZAF_CCDIR}/CentralScene/src/CC_CentralScene.c
+  ${ZAF_CCDIR}/CentralScene/src/cc_central_scene_nvm.c
+  ${ZAF_CCDIR}/Configuration/src/CC_Configuration.c
+  ${ZAF_CCDIR}/Configuration/src/cc_configuration_io.c
+  ${ZAF_CCDIR}/DeviceResetLocally/CC_DeviceResetLocally.c
+  ${ZAF_CCDIR}/DeviceResetLocally/CC_DeviceResetLocally_weak.c
+  ${ZAF_CCDIR}/DoorLock/src/CC_DoorLock.c
+  ${ZAF_CCDIR}/Indicator/src/CC_Indicator.c
+  ${ZAF_CCDIR}/ManufacturerSpecific/CC_ManufacturerSpecific.c
+  ${ZAF_CCDIR}/MultiChan/src/multichannel.c
+  ${ZAF_CCDIR}/MultiChan/src/CC_MultiChan.c
+  ${ZAF_CCDIR}/MultilevelSwitch/src/CC_MultilevelSwitch_Support.c
+  ${ZAF_CCDIR}/MultilevelSensor/src/CC_MultilevelSensor_Support.c
+  ${ZAF_CCDIR}/MultilevelSensor/src/CC_MultilevelSensor_SensorHandler.c
+  ${ZAF_CCDIR}/Notification/src/CC_Notification.c
+  ${ZAF_CCDIR}/PowerLevel/CC_PowerLevel.c
+  ${ZAF_CCDIR}/Security/CC_Security.c
+  ${ZAF_CCDIR}/Supervision/src/CC_Supervision.c
+  ${ZAF_CCDIR}/Supervision/src/cc_supervision_config_api.c
+  ${ZAF_CCDIR}/UserCode/src/CC_UserCode.c
+  ${ZAF_CCDIR}/UserCode/src/cc_user_code_database.c
+  ${ZAF_CCDIR}/Version/CC_Version.c
+  ${ZAF_CCDIR}/WakeUp/src/CC_WakeUp.c
+  ${ZAF_CCDIR}/WakeUp/src/cc_wake_up_config_api.c
+  ${ZAF_CCDIR}/BinarySwitch/src/CC_BinarySwitch.c
+  ${ZAF_CCDIR}/BinarySwitch/mocks/cc_binary_switch_config_api_mock.c
+  ${ZAF_CCDIR}/Common/mocks/CC_Common_mock.c
+  ${ZAF_CCDIR}/DeviceResetLocally/mocks/CC_DeviceResetLocally_mock_extern.c
+  ${ZAF_CCDIR}/Version/mocks/CC_Version_mock_extern.c
+  ${ZAF_UTILDIR}/mocks/mock_ZW_TransportEndpoint.c
+  ${ZAF_UTILDIR}/mocks/mock_ZW_TransportMulticast.c
+  ${ZAF_UTILDIR}/mocks/ZW_TransportSecProtocol_mock.c
+  ${ZAF_UTILDIR}/mocks/ZAF_command_class_utils_mock.c
+  ${ZAF_UTILDIR}/mocks/ZAF_transport_mock.c
+  ${ZAF_UTILDIR}/mocks/AppTimer_mock.c
+  ${ZAF_UTILDIR}/mocks/ZAF_nvm_mock.c
+  ${ZAF_UTILDIR}/mocks/ZAF_nvm_app_mock.c
+  ${ZAF_UTILDIR}/ZAF_CC_Invoker.c
+  ${ZWAVE_MOCKS_DIR}/ZW_keystore_mock.c
+  ${ZWAVE_MOCKS_DIR}/ZW_build_number_mock.c
+  ${ZWAVE_MOCKS_DIR}/mock_system_startup.c
+)
+
+add_unity_test(NAME test_generic
+               FILES ${test_generic_src}
+               LIBRARIES mock
+                         QueueNotifyingMock
+                         SwTimerMock
+                         Utils
+                         AppTimerMock
+                         CRC
+                         ZAF_CommonInterfaceMock
+                         ZAF_TSEMock
+                         ZAF_ActuatorMock
+                         zpal_mock
+                         zaf_config_mock
+                         cc_multilevel_switch_support_config_api_cmock
+                         cc_central_scene_config_api_cmock
+                         cc_configuration_config_api_cmock
+                         cc_door_lock_config_api_cmock
+                         cc_door_lock_config_io_cmock
+                         cc_multilevel_switch_support_io_cmock
+                         cc_notification_config_api_cmock
+                         cc_notification_io_cmock
+                         cc_multi_channel_config_api_cmock
+                         CC_CommonMock
+                         zaf_protocol_config_cmock
+                         zaf_transport_layer_cmock
+                         zaf_event_distributor_soc_cmock
+                         cc_association_config_api_cmock
+                         CC_FirmwareUpdate
+                         test_common
+               USE_CPP
+               USE_UNITY_WITH_CMOCK
+)
+
+target_compile_definitions(test_generic PRIVATE
+  test_generic_defines
+  ZW_SLAVE
+  ZAF_CONFIG_NUMBER_OF_END_POINTS=0
+  CC_ASSOCIATION_MAX_GROUPS_PER_ENDPOINT=1
+  CC_ASSOCIATION_MAX_NODES_IN_GROUP=1
+  ZAF_CONFIG_DEVICE_OPTION_MASK=APPLICATION_NODEINFO_LISTENING
+  ZAF_CONFIG_APP_ROLE_TYPE=ZWAVEPLUS_INFO_REPORT_ROLE_TYPE_END_NODE_ALWAYS_ON
+  CC_NOTIFICATION_MAX_NOTIFICATIONS=1
+)
+target_include_directories(test_generic
+  PRIVATE
+    ${ZAF_CCDIR}/Association/src
+    ${ZAF_CCDIR}/Association/config
+    ${ZAF_CCDIR}/Basic/inc
+    ${ZAF_CCDIR}/Battery/inc
+    ${ZAF_CCDIR}/Battery/config
+    ${ZAF_CCDIR}/BinarySwitch/inc
+    ${ZAF_CCDIR}/CentralScene
+    ${ZAF_CCDIR}/CentralScene/config
+    ${ZAF_CCDIR}/Common
+    ${ZAF_CCDIR}/Configuration/inc
+    ${ZAF_CCDIR}/Configuration/src
+    ${ZAF_CCDIR}/DeviceResetLocally
+    ${ZAF_CCDIR}/DoorLock/inc
+    ${ZAF_CCDIR}/Indicator
+    ${ZAF_CCDIR}/Indicator/inc
+    ${ZAF_CCDIR}/ManufacturerSpecific
+    ${ZAF_CCDIR}/MultiChan/inc
+    ${ZAF_CCDIR}/MultiChan/src
+    ${ZAF_CCDIR}/MultilevelSensor/config
+    ${ZAF_CCDIR}/MultilevelSensor/inc
+    ${ZAF_CCDIR}/MultilevelSensor/src
+    ${ZAF_CCDIR}/MultilevelSwitch/config
+    ${ZAF_CCDIR}/Notification
+    ${ZAF_CCDIR}/Notification/config
+    ${ZAF_CCDIR}/PowerLevel
+    ${ZAF_CCDIR}/Security
+    ${ZAF_CCDIR}/Supervision/inc
+    ${ZAF_CCDIR}/Supervision/config
+    ${ZAF_CCDIR}/UserCode/inc
+    ${ZAF_CCDIR}/UserCode/config
+    ${ZAF_CCDIR}/UserCode/src
+    ${ZAF_CCDIR}/Version
+    ${ZAF_CCDIR}/WakeUp/inc
+    ${ZAF_CCDIR}/WakeUp/config
+    ${ZAF_CCDIR}/ZWavePlusInfo/inc
+    ${ZAF_CCDIR}/ZWavePlusInfo/config
+    ${ZAF_UTILDIR}/mocks/inc
+    ${ZAF_UTILDIR}
+    ${ZAF_UNITTESTEXTERNALS}
+    ${ZW_ROOT}
+    ${CONFIG_DIR}
+    ${ZAF_CONFIGDIR}/inc
+    ${ZWAVE_API_DIR}
+)

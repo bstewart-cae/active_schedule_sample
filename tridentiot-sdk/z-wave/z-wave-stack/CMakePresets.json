@@ -1,0 +1,123 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "x86",
+      "hidden": true,
+      "inherits": [
+        "default"
+      ],
+      "toolchainFile": "${fileDir}/platform/x86/toolchain.cmake",
+      "cacheVariables": {
+        "PLATFORM": "x86"
+      }
+    },
+    {
+      "name": "Realtime",
+      "hidden": true,
+      "cacheVariables": {
+        "PLATFORM_VARIANT": "x86_REALTIME"
+      }
+    },
+    {
+      "name": "Emulated",
+      "hidden": true,
+      "cacheVariables": {
+        "PLATFORM_VARIANT": "x86_EMULATED"
+      }
+    },
+    {
+      "name": "Debug",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Release",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x86.Debug.Realtime",
+      "inherits": [
+        "x86",
+        "Debug",
+        "Realtime"
+      ]
+    },
+    {
+      "name": "x86.Release.Realtime",
+      "inherits": [
+        "x86",
+        "Release",
+        "Realtime"
+      ]
+    },
+    {
+      "name": "x86.Debug.Emulated",
+      "inherits": [
+        "x86",
+        "Debug",
+        "Emulated"
+      ]
+    },
+    {
+      "name": "x86.Release.Emulated",
+      "inherits": [
+        "x86",
+        "Release",
+        "Emulated"
+      ]
+    },
+    {
+      "name": "Test",
+      "inherits": [
+        "default"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Test"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x86.Debug.Realtime",
+      "configurePreset": "x86.Debug.Realtime"
+    },
+    {
+      "name": "x86.Release.Realtime",
+      "configurePreset": "x86.Release.Realtime"
+    },
+    {
+      "name": "x86.Debug.Emulated",
+      "configurePreset": "x86.Debug.Emulated"
+    },
+    {
+      "name": "x86.Release.Emulated",
+      "configurePreset": "x86.Release.Emulated"
+    },
+    {
+      "name": "Test",
+      "configurePreset": "Test"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "Test",
+      "configurePreset": "Test"
+    }
+  ]
+}

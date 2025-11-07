@@ -1,0 +1,70 @@
+/**
+@page led_bulb LED Bulb sample application
+
+[TOC]
+
+\include{doc} app_ledbulb.dox
+
+@section DKNCZ20_led_bulb_user_interface User Interface on the DKNCZ20 board
+
+@subsection led_bulb_buttons Buttons
+
+<table>
+  <tr>
+    <th>Button</th>
+    <th>Action</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>BTN0</td>
+    <td>Press</td>
+    <td>Resets the chip.</td>
+  </tr>
+  <tr>
+    <td rowspan="2">BTN1</td>
+    <td>Press</td>
+    <td>Toggles learn mode.</td>
+  </tr>
+  <tr>
+    <td>Hold (5sec)</td>
+    <td>Resets the application to factory settings.</td>
+  </tr>
+</table>
+
+@subsection led_bulb_leds LEDs
+
+<table>
+  <tr>
+    <th>LED</th>
+    <th>Behavior</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td rowspan="2">Green</td>
+    <td>Flashing</td>
+    <td>Learn mode is active.</td>
+  </tr>
+  <tr>
+    <td>Off</td>
+    <td>Learn mode is inactive.</td>
+  </tr>
+  <tr>
+    <td rowspan="2">RED</td>
+    <td>Dimming</td>
+    <td>Dimming red LED up/down.</td>
+  </tr>
+  <tr>
+    <td>Off</td>
+    <td>Red LED is off.</td>
+  </tr>
+  <tr>
+    <td rowspan="2">BLUE</td>
+    <td>Dimming</td>
+    <td>Dimming blueLED up/down.</td>
+  </tr>
+  <tr>
+    <td>Off</td>
+    <td>Blue LED is off.</td>
+  </tr>
+</table>
+*/

@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+# SPDX-FileCopyrightText: 2025 Trident IoT, LLC <https://www.tridentiot.com>
+# SPDX-License-Identifier: BSD-3-Clause
+add_test_subdirectory(tests)
+
+if(NOT DEFINED APP_NAME)
+  set(APP_NAME "zwave_soc_led_bulb")
+endif()
+
+if(NOT TARGET LEDBulb_hw)
+  # This library is required by the x86 build only.
+  add_library(LEDBulb_hw INTERFACE)
+  target_link_libraries(LEDBulb_hw
+    INTERFACE
+      AppsHw_platform
+  )
+endif()
+
+set(ZW_INCLUDES
+  # None.
+)
+
+set(APP_SOURCES_REGION
+  app.c
+)
+
+set(APP_SOURCES
+  # None.
+)
+
+set(ZW_DEFINITIONS
+  ZAF_CONFIG_PRODUCT_ID=7
+  ZAF_CONFIG_GENERIC_TYPE=GENERIC_TYPE_SWITCH_MULTILEVEL
+  ZAF_CONFIG_SPECIFIC_TYPE=SPECIFIC_TYPE_COLOR_TUNABLE_MULTILEVEL
+  ZAF_CONFIG_REQUEST_KEY_S0=1
+  ZAF_CONFIG_REQUEST_KEY_S2_UNAUTHENTICATED=1
+  ZAF_CONFIG_REQUEST_KEY_S2_AUTHENTICATED=1
+  ZAF_CONFIG_DEVICE_OPTION_MASK=APPLICATION_NODEINFO_LISTENING
+  ZAF_CONFIG_APP_ROLE_TYPE=ZWAVEPLUS_INFO_REPORT_ROLE_TYPE_END_NODE_ALWAYS_ON
+  ZAF_CONFIG_INSTALLER_ICON_TYPE=ICON_TYPE_GENERIC_LIGHT_DIMMER_SWITCH
+  ZAF_CONFIG_USER_ICON_TYPE=ICON_TYPE_GENERIC_LIGHT_DIMMER_SWITCH
+  ZAF_CONFIG_MANUFACTURER_ID=${ZW_CONFIG_MANUFACTURER_ID}
+  APP_MAX_TX_POWER_LR=200
+  APP_MAX_TX_POWER=0
+  APP_MEASURED_0DBM_TX_POWER=0
+)
+
+IF( CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Debug )
+
+  set(ZW_LIBS
+    LEDBulb_hw
+    ZWaveSlave
+    ZAF
+    ZAF_Actuator
+    ZAF_EventDistributor_soc
+    ZAF_TSE
+    CC_Basic
+    CC_ColorSwitch
+    CC_MultilevelSwitchSupport
+  )
+
+# IF(CMAKE_BUILD_TYPE MATCHES Debug)
+  list(APPEND ZW_LIBS ZAF_DEBUGPRINT)
+# ENDIF()
+
+  zw_create_app(
+    NAME "${APP_NAME}"
+    SOURCES "${APP_SOURCES}"
+    SOURCES_REGION "${APP_SOURCES_REGION}"
+    INCLUDES "${ZW_INCLUDES}"
+    LIBS "${ZW_LIBS}"
+    DEFINITIONS "${ZW_DEFINITIONS}"
+    REGIONS "${FREQ_LIST}"
+  )
+
+ENDIF()
+
+

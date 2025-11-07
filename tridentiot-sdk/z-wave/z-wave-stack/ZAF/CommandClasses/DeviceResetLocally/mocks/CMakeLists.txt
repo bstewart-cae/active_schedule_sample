@@ -1,0 +1,12 @@
+add_mock(cc_device_reset_locally_cmock
+  ${ZAF_CCDIR}/DeviceResetLocally/CC_DeviceResetLocally.h
+)
+target_include_directories(cc_device_reset_locally_cmock
+  PUBLIC
+  ${ZAF_UTILDIR}
+  ${ZWAVE_API_DIR}
+)
+target_link_libraries(cc_device_reset_locally_cmock
+  PRIVATE
+  zpal
+)

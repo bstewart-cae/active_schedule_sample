@@ -1,0 +1,9 @@
+[project]
+name = "active_schedule_sample"
+category = "z-wave"
+target = "T32CZ20B"
+template = "z-wave/door_lock_keypad"
+default_hex = "dkncz20_usb_t32cz20_signed_combined.hex"
+
+[sdk]
+version = "v2025.10.00-ga"

@@ -1,0 +1,9 @@
+/*TODO: Trident License Comment
+ */
+#ifndef TR_PLATFORM_TOKEN_DEF_H
+#define TR_PLATFORM_TOKEN_DEF_H
+
+#define TR_MFG_TOKEN_BASE 0x100FE000
+#define TR_APP_TOKEN_BASE 0x100FE800
+
+#endif // TR_PLATFORM_TOKEN_DEF_H

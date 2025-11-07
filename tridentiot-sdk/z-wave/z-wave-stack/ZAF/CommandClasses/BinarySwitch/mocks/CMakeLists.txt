@@ -1,0 +1,12 @@
+add_cc_config_mock(CC_BinarySwitch_config_cmock 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../inc/CC_BinarySwitch.h
+)
+target_include_directories(CC_BinarySwitch_config_cmock
+  PUBLIC
+    ${ZW_ROOT}/PAL/inc
+    ${ZWAVE_API_DIR}
+    ${ZAF_UTILDIR}
+    ${ZAF_UTILDIR}/Actuator
+    ${COMPONENTS_DIR}/SwTimer
+    ${ZAF_CONFIGDIR}/inc
+)
