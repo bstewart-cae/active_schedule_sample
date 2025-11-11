@@ -10,6 +10,10 @@ zw_add_object_cc(NAME CC_ActiveSchedule
     ${CMAKE_CURRENT_SOURCE_DIR}/src
   SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CC_ActiveSchedule.c
+  DEPENDS
+    ZAF_EventDistributor_soc
+    ZAF_TSE_weak
+    CRC
 )
 
 ## Add test subdirectories
