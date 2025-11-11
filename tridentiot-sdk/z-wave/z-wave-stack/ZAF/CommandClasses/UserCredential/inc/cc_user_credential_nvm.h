@@ -87,6 +87,7 @@ typedef enum u3c_nvm_area_ {
   AREA_CREDENTIAL_METADATA,
   AREA_CREDENTIAL_DATA,
   AREA_ADMIN_PIN_CODE_DATA,
+  AREA_SCHEDULE_DATA,
 } u3c_nvm_area;
 
 #endif /* CC_USER_CREDENTIAL_NVM */

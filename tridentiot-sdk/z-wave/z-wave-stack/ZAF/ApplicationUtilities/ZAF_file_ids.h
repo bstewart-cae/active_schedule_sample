@@ -81,6 +81,15 @@
  */
 #define ZAF_FILE_ID_ADMIN_PIN_CODE (1996)
 
+/**
+ * Schedule data storage
+ * 
+ * Because this is the same layout as the users, this will 
+ * follow the same mapping as is found in the descriptor table.
+ */
+#define ZAF_FILE_ID_CC_USER_CREDENTIAL_SCHEDULE_BASE (1997)
+#define ZAF_FILE_ID_CC_USER_CREDENTIAL_SCHEDULE_LAST (2252)
+
 #define ZAF_FILE_SIZE_APP_VERSION  (sizeof(uint32_t))
 
 /**
