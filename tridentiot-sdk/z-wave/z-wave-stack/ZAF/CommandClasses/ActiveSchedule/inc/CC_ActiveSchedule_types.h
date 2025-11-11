@@ -128,6 +128,13 @@ typedef enum _ascc_report_type_t_ {
   ASCC_REP_TYPE_MODIFY_ZWAVE    = ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_REPORT_CODE_SCHEDULE_MODIFIED_Z_WAVE
 } ascc_report_type_t;
 
+/* 
+ * In some cases, we want to be able to cast chunks of this struct to run
+ * some verification logic, this allows us to peek into struct in a predictable manner 
+ * without reallocating into another struct or passing large numbers of parameters on the
+ * stack
+ */
+#pragma pack(push, 1)
 /**
  * @brief Defines the time fence for a year day schedule.
  * 
@@ -147,6 +154,7 @@ typedef struct _ascc_year_day_schedule {
   uint8_t stop_hour;
   uint8_t stop_minute;
 } ascc_year_day_schedule_t;
+#pragma pack(pop)
 
 /**
  * @brief Defines the time fence for a daily repeating schedule.
