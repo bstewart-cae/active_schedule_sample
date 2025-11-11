@@ -8,7 +8,8 @@
  * @date 2025-11-10
  * @author bstewart (Card Access, Inc.)
  *
- * @brief
+ * @brief This defines the stubs for User targets for the Active Schedule CC.
+ * This also interfaces with the NVM database to track and store this information.
  */
 
 /****************************************************************************
@@ -29,9 +30,54 @@
  *                     PRIVATE TYPES AND DECLARATIONS                       *
  ****************************************************************************/
 
+#define MAX_HOUR_COUNTER   (23)   ///< Hours will never be more than this value
+#define MAX_MINUTE_COUNTER (59)   ///< Minutes will never be more than this value
+#define MAX_MONTH_COUNTER  (12)   ///< Month value will never be more than this value
+#define FEB_LEAP_YEAR_DAYS (29)   ///< Number of days in February during leap years
+#define FEB_INDEX          (2)    ///< February month index
+#define LEAP_YEAR_CADENCE  (4)    ///< Number of days in February during leap years
+#define MAX_WEEKDAY_MASK   (0x7F) ///< Maximum value for weekday mask
+
+/* 
+ * This is packed to fill the same format as the YD schedules.
+ * The schedules are defined as loose values still because there's
+ * no standard way to represent time or time stamps, and we don't want
+ * to add unnecessary steps to any other application
+ */
+#pragma pack(push, 1)
+typedef struct ascc_time_stamp_ {
+    uint16_t year;   ///< Gregorian Year
+    uint8_t  month;  ///< January - 1, Feb. - 2, etc. 0 is unused and considered erroneous
+    uint8_t  day;    ///< Calendar day, 1-31
+    uint8_t  hour;   ///< Hour in 24h time (0-23)
+    uint8_t  minute; ///< Minute (0-59)
+} ascc_time_stamp_t;
+#pragma pack(pop)
+
 /****************************************************************************
  *                               PRIVATE DATA                               *
  ****************************************************************************/
+
+/**
+ * @brief Simple map (month - 1) containing the value of the number of days in the month
+ */
+static const uint8_t day_count[] = {
+    0,  ///< Unused
+    31, ///< January
+    28, ///< February (Check for leap year)
+    31, ///< March
+    30, ///< April
+    31, ///< May
+    30, ///< June
+    31, ///< July
+    31, ///< August
+    30, ///< September
+    31, ///< October
+    30, ///< November
+    31 ///< December
+};
+
+
 
 /****************************************************************************
  *                     PRIVATE FUNCTION DECLARATIONS                        *
@@ -55,7 +101,9 @@ static ascc_op_result_t app_db_get_schedule_data(const ascc_type_t schedule_type
 static ascc_op_result_t app_db_set_schedule_data(const ascc_op_type_t operation,
                                                  const ascc_schedule_t * const schedule,
                                                  uint16_t * next_slot);
-
+static bool is_time_stamp_valid(const ascc_time_stamp_t * const timestamp);
+static bool is_time_fence_valid(const ascc_time_stamp_t * const start, 
+                                const ascc_time_stamp_t * const end);
 /****************************************************************************
  *                     EXPORTED FUNCTION DEFINITIONS                        *
  ****************************************************************************/
@@ -146,8 +194,34 @@ bool app_db_validate_schedule_slot(const uint16_t target_ID,
  */
 bool app_db_validate_schedule_data(const ascc_schedule_t * const schedule)
 {
-    (void*)schedule;
-    return false;
+    // Schedule data is unused
+    if (schedule->data.metadata_length > 0) {
+        return false;
+    }
+    bool response = true;
+    // Check schedule time values here
+    if (schedule->type == ASCC_TYPE_DAILY_REPEATING) {
+        ascc_daily_repeating_schedule_t * dr_schedule = 
+            &schedule->data.schedule.daily_repeating;
+        /* Make sure that all of the values are in appropriate ranges */
+        if (dr_schedule->duration_hour > MAX_HOUR_COUNTER ||
+              dr_schedule->duration_minute > MAX_MINUTE_COUNTER ||
+              dr_schedule->start_hour > MAX_HOUR_COUNTER ||
+              dr_schedule->start_minute > MAX_MINUTE_COUNTER ||
+              dr_schedule->weekday_mask > MAX_WEEKDAY_MASK) {
+            response = false;
+        }
+    } else if (schedule->type == ASCC_TYPE_YEAR_DAY) {
+        ascc_year_day_schedule_t * yd_schedule = &schedule->data.schedule;
+        const ascc_time_stamp_t * start = (ascc_time_stamp_t*)&yd_schedule->start_year;
+        const ascc_time_stamp_t * end = (ascc_time_stamp_t*)&yd_schedule->stop_year;
+        // Verifying the time fence also verifies the individual time stamps
+        response = is_time_fence_valid(start, end);
+    } else {
+        // Don't want roque enumerator values in here
+        return false;
+    }
+    return response;
 }
 
 /**
@@ -252,5 +326,76 @@ ascc_op_result_t app_db_set_schedule_data(__attribute__((unused))const ascc_op_t
         .result = ASCC_OPERATION_FAIL
     };
 
+    return result;
+}
+
+/**
+ * @brief Checks if a given time stamp is valid
+ * 
+ * @param timestamp Timestamp to check for validity
+ * @return True if valid, false if not
+ */
+static bool is_time_stamp_valid(const ascc_time_stamp_t * const timestamp)
+{
+    bool result = true;
+    if (!timestamp) {
+        return false;
+    }
+    // Year is always valid, so we skip that
+    if (timestamp->month == 0 || timestamp->month > MAX_MONTH_COUNTER) {
+        return false;
+    }
+    // Get target day count based on month
+    uint8_t days = day_count[timestamp->month];
+    // Make sure this isn't february during a leap year
+    if (timestamp->month == FEB_INDEX && 
+          timestamp->year % LEAP_YEAR_CADENCE) {
+        days = FEB_LEAP_YEAR_DAYS;
+    }
+    // Check remaining values
+    if (timestamp->day == 0 
+          || timestamp->day > days 
+          || timestamp->hour > MAX_HOUR_COUNTER
+          || timestamp->minute > MAX_MINUTE_COUNTER) {
+        result = false;
+    }
+    return result;
+}
+
+/**
+ * @brief Checks if a given time fence is valid. Both time stamps must be 
+ *        valid time stamps and the end must be after the start.
+ * 
+ * @note Daylight savings is not taken into account here - this is just for 
+ *       reference. You're on your own with that one in your particular application.
+ * 
+ * @param timestamp Timestamp to check for validity
+ * @return True if valid, false if not
+ */
+static bool is_time_fence_valid(const ascc_time_stamp_t * const start,
+                                const ascc_time_stamp_t * const end)
+{
+    bool result = false;
+    if (is_time_stamp_valid(start) && is_time_stamp_valid(end)) {
+        if (start->year < end->year) {
+            result = true;
+        } else if (start->year == end->year) {
+            if (start->month < end->month) {
+                result = true;
+            } else if (start->month == end->month) {
+                if (start->day < end->day) {
+                    result == true;
+                } else if (start->day == end->day) {
+                    if (start->hour < end->hour) {
+                        result == true;
+                    } else if (start-> hour == end->hour) {
+                        if (start->minute < end->minute) {
+                            result == true;
+                        } // If time stamps are equal, then this check fails
+                    }
+                }
+            }
+        }
+    }
     return result;
 }
