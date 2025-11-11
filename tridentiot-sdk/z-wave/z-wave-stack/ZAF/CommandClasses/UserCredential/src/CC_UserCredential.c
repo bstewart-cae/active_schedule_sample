@@ -204,14 +204,11 @@ static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_ha
 static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_parser(
   cc_handler_input_t const * const input)
 {
-  uint16_t source_slot = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.sourceCredentialSlot1 << 8)
-                         | input->frame->ZW_UserCredentialAssociationSetFrame.sourceCredentialSlot2;
+  uint16_t source_slot = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.credentialSlot1 << 8)
+                         | input->frame->ZW_UserCredentialAssociationSetFrame.credentialSlot2;
 
   uint16_t destination_uuid = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.destinationUserUniqueIdentifier1 << 8)
                               | input->frame->ZW_UserCredentialAssociationSetFrame.destinationUserUniqueIdentifier2;
-
-  uint16_t destination_slot = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.destinationCredentialSlot1 << 8)
-                              | input->frame->ZW_UserCredentialAssociationSetFrame.destinationCredentialSlot2;
 
   u3c_credential_metadata_t source_metadata = { 0 };
   source_metadata.type = input->frame->ZW_UserCredentialAssociationSetFrame.credentialType;
@@ -220,7 +217,6 @@ static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_pa
   u3c_credential_metadata_t destination_metadata = { 0 };
   destination_metadata.uuid = destination_uuid;
   destination_metadata.type = source_metadata.type;
-  destination_metadata.slot = destination_slot;
 
   bool parsing_success = false;
   u3c_user_credential_association_report_status_t status = U3C_UCAR_STATUS_SUCCESS;
@@ -233,15 +229,7 @@ static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_pa
   }
   // Source Credential Slot must be in supported range
   else if (source_slot == 0 || source_slot > cc_user_credential_get_max_credential_slots(source_metadata.type)) {
-    status = U3C_UCAR_STATUS_SOURCE_CREDENTIAL_SLOT_INVALID;
-  }
-  // Destination User Unique Identifier must be in supported range
-  else if (0 == destination_uuid || destination_uuid > cc_user_credential_get_max_user_unique_idenfitiers()) {
-    status = U3C_UCAR_STATUS_DESTINATION_USER_UNIQUE_IDENTIFIER_INVALID;
-  }
-  // Check if the Destination Credential Slot must be in supported range
-  else if (destination_slot == 0 || destination_slot > cc_user_credential_get_max_credential_slots(destination_metadata.type)) {
-    status = U3C_UCAR_STATUS_DESTINATION_CREDENTIAL_SLOT_INVALID;
+    status = U3C_UCAR_STATUS_CREDENTIAL_SLOT_INVALID;
   } else {
     parsing_success = true;
   }

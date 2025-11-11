@@ -542,14 +542,6 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_move_credential_and_report(
     fill_rx_frame_with_local(p_rx_options);
   }
 
-  // CC:0083.01.12.11.007: Destination User Unique Identifier must reference an existing User
-  if (U3C_DB_OPERATION_RESULT_SUCCESS != CC_UserCredential_get_user(destination_uuid, NULL, NULL)
-      && !local_initiative) {
-    CC_UserCredential_send_association_report(
-      &source_metadata, &destination_metadata, U3C_UCAR_STATUS_DESTINATION_USER_UNIQUE_IDENTIFIER_NONEXISTENT, p_rx_options);
-    return U3C_DB_OPERATION_RESULT_ERROR;
-  }
-
   /**
    * Attempt to execute the move operation. If the source Credential does not
    * exist or the destination slot is occupied, send an error report.
@@ -564,10 +556,10 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_move_credential_and_report(
       status = U3C_UCAR_STATUS_SUCCESS;
       break;
     case U3C_DB_OPERATION_RESULT_FAIL_DNE:
-      status = U3C_UCAR_STATUS_SOURCE_CREDENTIAL_SLOT_EMPTY;
+      status = U3C_UCAR_STATUS_CREDENTIAL_SLOT_EMPTY;
       break;
     case U3C_DB_OPERATION_RESULT_FAIL_OCCUPIED:
-      status = U3C_UCAR_STATUS_DESTINATION_CREDENTIAL_SLOT_OCCUPIED;
+      status = U3C_UCAR_STATUS_CREDENTIAL_SLOT_INVALID;
       break;
     default:
       // Database error
@@ -599,12 +591,10 @@ ZW_WEAK bool CC_UserCredential_send_association_report(
   p_cmd->cmdClass                         = COMMAND_CLASS_USER_CREDENTIAL;
   p_cmd->cmd                              = USER_CREDENTIAL_ASSOCIATION_REPORT;
   p_cmd->credentialType             = (uint8_t)p_source_metadata->type;
-  p_cmd->sourceCredentialSlot1            = (uint8_t)(p_source_metadata->slot >> 8); // MSB
-  p_cmd->sourceCredentialSlot2            = (uint8_t)p_source_metadata->slot; // LSB
+  p_cmd->credentialSlot1            = (uint8_t)(p_source_metadata->slot >> 8); // MSB
+  p_cmd->credentialSlot2            = (uint8_t)p_source_metadata->slot; // LSB
   p_cmd->destinationUserUniqueIdentifier1 = (uint8_t)(p_destination_metadata->uuid >> 8); // MSB
   p_cmd->destinationUserUniqueIdentifier2 = (uint8_t)p_destination_metadata->uuid; // LSB
-  p_cmd->destinationCredentialSlot1       = (uint8_t)(p_destination_metadata->slot >> 8); // MSB
-  p_cmd->destinationCredentialSlot2       = (uint8_t)p_destination_metadata->slot; // LSB
   p_cmd->userCredentialAssociationStatus  = (uint8_t)status;
 
   zaf_tx_options_t tx_options;
