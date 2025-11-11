@@ -29,6 +29,8 @@ set(APP_SOURCES
   app_cc_event_handlers.c
 )
 
+add_subdirectory(database)
+
 set(ZW_DEFINITIONS
   ZAF_CONFIG_PRODUCT_ID=1
   ZAF_CONFIG_GENERIC_TYPE=GENERIC_TYPE_ENTRY_CONTROL
@@ -58,6 +60,7 @@ IF( CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Debug )
     ZAF
     ZAF_EventDistributor_soc
     ZAF_TSE
+    CC_ActiveSchedule
     CC_Basic
     CC_Battery
     CC_Battery_nvm
@@ -68,7 +71,6 @@ IF( CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Debug )
     CC_UserCode_UserCredential
     CC_UserCredential
     CC_UserCredential_config
-    CC_UserCredential_nvm
   )
 
 # IF(CMAKE_BUILD_TYPE MATCHES Debug)
