@@ -27,6 +27,7 @@
 #include "database_properties.h" 
 #include "CC_ActiveSchedule.h"
 #include "cc_active_schedule_io.h"
+#include "cc_active_schedule_config.h"
 #include "CC_UserCredential.h"
 #include "cc_user_credential_config.h"
 
@@ -44,18 +45,37 @@ typedef struct credential_metadata_nvm_t_ {
   u3c_modifier_type modifier_type;
 } credential_metadata_nvm_t;
 
+#pragma pack(push, 1)
+/**
+ * @brief Packs relevant Year Day schedule information into single struct 
+ */
+typedef struct year_day_nvm_ {
+  bool occupied;
+  ascc_year_day_schedule_t schedule;
+} year_day_nvm_t;
+
+/**
+ * @brief Packs relevant Daily Repeating schedule information into single struct
+ */
+typedef struct daily_repeating_nvm_ {
+  bool occupied;
+  ascc_daily_repeating_schedule_t schedule;
+} daily_repeating_nvm_t;
+#pragma pack(pop)
+
 /**
  * Schedule metadata object for storage in NVM.
  * 
  * This contains all of the schedule information for a given User.
+ * 
+ * @note The schedules are stored in zero-indexed arrays - a schedule 
+ * 'slot' will correspond to its array index + 1 as slots are 1-indexed.
  */
 typedef struct schedule_metadata_nvm_t_ {
   uint16_t uuid;
   bool scheduling_active;
-  uint8_t yd_schedules_active_mask[(MAX_YEAR_DAY_SCHEDULES_PER_USER / sizeof(uint8_t)) + 1];
-  uint8_t daily_repeating_active_mask[(MAX_YEAR_DAY_SCHEDULES_PER_USER / sizeof(uint8_t)) + 1];
-  ascc_year_day_schedule_t year_day_schedules[MAX_YEAR_DAY_SCHEDULES_PER_USER]; 
-  ascc_daily_repeating_schedule_t daily_repeating_schedules[MAX_DAILY_REPEATING_SCHEDULES_PER_USER];
+  year_day_nvm_t year_day_schedules[MAX_YEAR_DAY_SCHEDULES_PER_USER]; 
+  daily_repeating_nvm_t daily_repeating_schedules[MAX_DAILY_REPEATING_SCHEDULES_PER_USER];
 } schedule_metadata_nvm_t;
 
 /**
@@ -108,6 +128,7 @@ typedef enum app_nvm_area_ {
   AREA_CREDENTIAL_METADATA,
   AREA_CREDENTIAL_DATA,
   AREA_ADMIN_PIN_CODE_DATA,
+  AREA_KEY_LOCKER_DATA,
   AREA_SCHEDULE_DATA,
 } app_nvm_area;
 
