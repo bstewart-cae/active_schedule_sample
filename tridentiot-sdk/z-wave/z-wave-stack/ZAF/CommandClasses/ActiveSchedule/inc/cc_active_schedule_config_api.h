@@ -1,7 +1,8 @@
-/**
+/*
  * SPDX-License-Identifier: BSD-3-Clause
  * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC.
- *
+ */
+/**
  * @file cc_active_schedule_config_api.h
  */
 
