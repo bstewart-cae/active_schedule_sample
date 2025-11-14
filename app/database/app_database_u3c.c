@@ -113,22 +113,22 @@ bool app_db_get_user_offset_from_id(const uint16_t uuid, uint16_t * offset)
   // Read the User descriptor table from NVM
   user_descriptor_t users[U3C_BUFFER_SIZE_USER_DESCRIPTORS];
   memset(users, 0, sizeof(users));
-
+  bool result = false;
   if (!app_nvm(U3C_READ, AREA_USER_DESCRIPTORS, 0, &users, 0)) {
-    return U3C_DB_OPERATION_RESULT_ERROR_IO;
+    return false;
   }
   uint16_t page = 0;
   for (uint16_t i = 0; i < n_users; ++i) {
     if (users[i].unique_identifier == uuid) {
       // User found
       page = users[i].object_offset;
-      return true;
+      result = true;
     }
   }
-  if (offset) {
+  if (result && offset) {
     *offset = page;
   }
-  return false;
+  return result;
 }
 
 u3c_db_operation_result CC_UserCredential_get_user(
@@ -150,31 +150,26 @@ u3c_db_operation_result CC_UserCredential_get_user(
   if (!app_nvm(U3C_READ, AREA_USER_DESCRIPTORS, 0, &users, 0)) {
     return U3C_DB_OPERATION_RESULT_ERROR_IO;
   }
-
+  uint16_t offset = 0;
   // Find User
-  for (uint16_t i = 0; i < n_users; ++i) {
-    if (users[i].unique_identifier == unique_identifier) {
-      // User found
-
-      // Copy User object from NVM if requested
+  if (app_db_get_user_offset_from_id(unique_identifier, &offset)) {
+    // User found
+    // Copy User object from NVM if requested
       if (user) {
-        if (!app_nvm(U3C_READ, AREA_USERS, users[i].object_offset, user, 0)) {
+        if (!app_nvm(U3C_READ, AREA_USERS, offset, user, 0)) {
           return U3C_DB_OPERATION_RESULT_ERROR_IO;
         }
       }
 
       // Copy User name from NVM if requested
       if (name) {
-        if (!app_nvm(U3C_READ, AREA_USER_NAMES, users[i].object_offset, name,
-                 user->name_length)) {
+        if (!app_nvm(U3C_READ, AREA_USER_NAMES, offset, name,
+                  user->name_length)) {
           return U3C_DB_OPERATION_RESULT_ERROR_IO;
         }
       }
-
       return U3C_DB_OPERATION_RESULT_SUCCESS;
-    }
   }
-
   // User not found
   return U3C_DB_OPERATION_RESULT_FAIL_DNE;
 }

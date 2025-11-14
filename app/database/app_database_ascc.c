@@ -20,10 +20,9 @@
 #include "cc_active_schedule_config_api.h"
 #include "cc_user_credential_config_api.h"
 #include "cc_user_credential_io.h"
-
-
+#include "events.h"
 // Stack/SDK includes should always go second to last and be listed alphabetically
-
+#include <Assert.h>
 // Language includes should always go last and be listed alphabetically
 
 /****************************************************************************
@@ -37,7 +36,7 @@
 #define FEB_INDEX          (2)    ///< February month index
 #define LEAP_YEAR_CADENCE  (4)    ///< Number of days in February during leap years
 #define MAX_WEEKDAY_MASK   (0x7F) ///< Maximum value for weekday mask
-
+#define LAST_OCCUPIED_SLOT (0xFF) ///< Signifier that no more occupied slots exist
 /* 
  * This is packed to fill the same format as the YD schedules.
  * The schedules are defined as loose values still because there's
@@ -61,7 +60,7 @@ typedef struct ascc_time_stamp_ {
 /**
  * @brief Simple map (month - 1) containing the value of the number of days in the month
  */
-static const uint8_t day_count[] = {
+static const uint8_t m_day_count[] = {
     0,  ///< Unused
     31, ///< January
     28, ///< February (Check for leap year)
@@ -77,7 +76,7 @@ static const uint8_t day_count[] = {
     31 ///< December
 };
 
-
+static RECEIVE_OPTIONS_TYPE_EX m_rx_opts = { 0 };
 
 /****************************************************************************
  *                     PRIVATE FUNCTION DECLARATIONS                        *
@@ -101,9 +100,20 @@ static ascc_op_result_t app_db_get_schedule_data(const ascc_type_t schedule_type
 static ascc_op_result_t app_db_set_schedule_data(const ascc_op_type_t operation,
                                                  const ascc_schedule_t * const schedule,
                                                  uint16_t * next_slot);
+static void clear_all_schedules_for_user_by_type(
+    schedule_metadata_nvm_t * schedule_data,
+    const ascc_type_t schedule_type);
+static uint16_t get_first_schedule_index(
+    const schedule_metadata_nvm_t * schedule_data, 
+    const ascc_type_t type);
+static uint16_t get_next_schedule_slot(
+    const schedule_metadata_nvm_t * schedule_data, 
+    const ascc_type_t type,
+    const uint16_t current_slot);
 static bool is_time_stamp_valid(const ascc_time_stamp_t * const timestamp);
 static bool is_time_fence_valid(const ascc_time_stamp_t * const start, 
                                 const ascc_time_stamp_t * const end);
+
 /****************************************************************************
  *                     EXPORTED FUNCTION DEFINITIONS                        *
  ****************************************************************************/
@@ -166,6 +176,7 @@ bool app_db_validate_target(const ascc_target_t * const target) {
  * @param type        Schedule type (Year Day/Daily Repeating)
  * @param slot        Schedule slot
  *
+ * @note Slots are 1-indexed so we ned to account for that here.
  * @return true if target slot is valid.
  *         false if target slot is invalid.
  */
@@ -174,9 +185,9 @@ bool app_db_validate_schedule_slot(const uint16_t target_ID,
                                    const uint16_t slot)
 {
     if (type == ASCC_TYPE_DAILY_REPEATING) {
-        return slot < MAX_DAILY_REPEATING_SCHEDULES_PER_USER;
+        return slot <= MAX_DAILY_REPEATING_SCHEDULES_PER_USER;
     } else if (type == ASCC_TYPE_YEAR_DAY) {
-        return slot < MAX_YEAR_DAY_SCHEDULES_PER_USER;
+        return slot <= MAX_YEAR_DAY_SCHEDULES_PER_USER;
     }
     return false;
 }
@@ -235,7 +246,7 @@ bool app_db_validate_schedule_data(const ascc_schedule_t * const schedule)
  *          ASCC_OPERATION_RESULT_SUCCESS for successful get
  *          ASCC_OPERATION_RESULT_WORKING for successful initiation of get process.
  *              Application assumes responsibility for appropriate report handling.
- *          ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult end node documentation.
+ *          ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult supporting node documentation.
  */
 ascc_op_result_t app_db_get_schedule_state(const ascc_target_t * const target,
                                            bool * state)
@@ -243,11 +254,16 @@ ascc_op_result_t app_db_get_schedule_state(const ascc_target_t * const target,
     ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
-    uint16_t page = 0;
-    if (app_db_get_user_offset_from_id(target->target_id, &page)) {
-        
+    uint16_t offset = 0;
+    if (state &&
+          target &&
+          app_db_get_user_offset_from_id(target->target_id, &offset)) {
+        schedule_metadata_nvm_t schedule_data = { 0 };
+        if (app_nvm(U3C_READ, AREA_SCHEDULE_DATA, offset, (void*)&schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            *state = schedule_data.scheduling_active;
+            result.result = ASCC_OPERATION_SUCCESS;
+        }
     }
-
     return result;
 }
 
@@ -262,15 +278,28 @@ ascc_op_result_t app_db_get_schedule_state(const ascc_target_t * const target,
  *         ASCC_OPERATION_RESULT_SUCCESS for successful set
  *         ASCC_OPERATION_RESULT_WORKING for successful initiation of set process.
  *             Application assumes responsibility for appropriate report handling.
- *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult end node documentation.
+ *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult supporting node documentation.
  */
-ascc_op_result_t app_db_set_schedule_state(__attribute__((unused))const ascc_target_t * const target,
-                                           __attribute__((unused))const bool state)
+ascc_op_result_t app_db_set_schedule_state(const ascc_target_t * const target,
+                                           const bool state)
 {
     ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
-
+    uint16_t offset = 0;
+    if (target && app_db_get_user_offset_from_id(target->target_id, &offset)) {
+        schedule_metadata_nvm_t schedule_data = { 0 };
+        if (app_nvm(U3C_READ, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            // If 'enabled' value is not equal, then update and back up
+            if (schedule_data.scheduling_active != state) {
+                schedule_data.scheduling_active = state; 
+                if(!app_nvm(U3C_WRITE, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                    return result;
+                }
+            }
+            result.result = ASCC_OPERATION_SUCCESS;
+        }
+    }
     return result;
 }
 
@@ -283,22 +312,51 @@ ascc_op_result_t app_db_set_schedule_state(__attribute__((unused))const ascc_tar
  * @param[out] schedule  Pointer to schedule structure in which schedule data is returned
  * @param[out] next_slot Pointer with which to populate the next occupied schedule slot
  *                       for that target, or 0 if there are none.
+ * 
+ * @note Remember that slots are 1-indexed from a Z-Wave perspective.
  *
  * @return ascc_io_op_result_t as follows:
  *         ASCC_OPERATION_RESULT_SUCCESS for successful get
  *         ASCC_OPERATION_RESULT_WORKING for successful initiation of get process.
  * `            Application assumes responsibility for appropriate report handling.
- *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult end node documentation.
+ *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult supporting node documentation.
  */
-ascc_op_result_t app_db_get_schedule_data(__attribute__((unused))const ascc_type_t schedule_type,
-                                          __attribute__((unused))const uint16_t slot,
-                                          __attribute__((unused))const ascc_target_t * const target,
-                                          __attribute__((unused))ascc_schedule_data_t * schedule,
-                                          __attribute__((unused))uint16_t * next_slot)
+ascc_op_result_t app_db_get_schedule_data(const ascc_type_t schedule_type,
+                                          const uint16_t slot,
+                                          const ascc_target_t * const target,
+                                          ascc_schedule_data_t * schedule,
+                                          uint16_t * next_slot)
 {
-   ascc_op_result_t result = {
+    ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
+    uint16_t offset = 0;
+    if (target 
+            /* Overflow protection */
+            && slot <= app_db_get_schedule_count(schedule_type)
+            && schedule 
+            && app_db_get_user_offset_from_id(target->target_id, &offset)) {
+        schedule_metadata_nvm_t schedule_data = { 0 };
+        if (app_nvm(U3C_READ, AREA_SCHEDULE_DATA, offset, (void*)&schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            uint16_t slot_tmp = slot == 0 ? get_first_schedule_index(&schedule_data, schedule_type) :
+                                           slot;
+            if (schedule_type == ASCC_TYPE_DAILY_REPEATING) {
+                memcpy(&schedule->schedule.daily_repeating, (void*)&schedule_data.daily_repeating_schedules[slot_tmp-1].schedule, sizeof(ascc_daily_repeating_schedule_t));
+            } else if (schedule_type == ASCC_TYPE_YEAR_DAY) {
+                memcpy(&schedule->schedule.year_day, (void*)&schedule_data.year_day_schedules[slot_tmp-1].schedule, sizeof(ascc_year_day_schedule_t));
+            } else {
+                result.result = ASCC_OPERATION_INVALID_GET;
+                return result;
+            }
+            // Populate next slot, if provided.
+            if (next_slot) {
+                *next_slot = get_next_schedule_index(&schedule_data, schedule_type, slot_tmp);
+            }
+            result.result = ASCC_OPERATION_SUCCESS;
+        }
+    } else {
+        result.result = ASCC_OPERATION_INVALID_GET;
+    }
 
     return result;
 }
@@ -316,17 +374,158 @@ ascc_op_result_t app_db_get_schedule_data(__attribute__((unused))const ascc_type
  *         ASCC_OPERATION_RESULT_SUCCESS for successful set
  *         ASCC_OPERATION_RESULT_WORKING for successful initiation of set process.
  * `            Application assumes responsibility for appropriate report handling.
- *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult end node documentation.
+ *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult supporting node documentation.
  */
-ascc_op_result_t app_db_set_schedule_data(__attribute__((unused))const ascc_op_type_t operation,
-                                          __attribute__((unused))const ascc_schedule_t * const schedule,
-                                          __attribute__((unused))uint16_t * next_slot)
+ascc_op_result_t app_db_set_schedule_data(const ascc_op_type_t operation,
+                                          const ascc_schedule_t * const schedule,
+                                          uint16_t * next_slot)
 {
-   ascc_op_result_t result = {
+    ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
-
+    uint16_t offset = 0;
+    uint16_t next_slot = 0;
+    if (operation == ASCC_OP_TYPE_ERASE) {
+        // Erase all schedules
+        if (schedule->slot_id == 0) {
+            if (schedule->target.target_id == 0) { // Erase all schedules for all targets
+                zaf_event_distributor_enqueue_app_event(schedule->type == ASCC_TYPE_YEAR_DAY ? EVENT_APP_DELETE_ALL_YD_SCHEDULES_START :
+                                                                                                EVENT_APP_DELETE_ALL_DR_SCHEDULES_START);
+                result.result = ASCC_OPERATION_WORKING; 
+                result.working_time = 10; // 10 seconds as an example
+            } else { // Erase all schedules for this target specifically
+                uint16_t offset = 0;
+                schedule_metadata_nvm_t schedule_data = { 0 };
+                if (app_db_get_user_offset_from_id(schedule->target.target_id, &offset) &&
+                      app_nvm(U3C_READ, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                    clear_all_schedules_for_user_by_type(&schedule_data, schedule->type);
+                    result.result = ASCC_OPERATION_SUCCESS;
+                }
+                // Back up updated mirror to NVM
+                if (app_nvm(U3C_WRITE, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                    result.result = ASCC_OPERATION_SUCCESS;
+                }
+            }
+        // Erase a specific schedule, 0 isn't allowed as a user
+        } else if (schedule->slot_id != 0 && schedule->target.target_id != 0){
+            uint16_t offset = 0;
+            schedule_metadata_nvm_t schedule_data = { 0 };
+            if (app_db_get_user_offset_from_id(schedule->target.target_id, &offset) &&
+                    app_nvm(U3C_READ, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                // Update information in local flash mirror
+                // By clearing out the entire struct, we also clear the available bit
+                void * ptr = NULL;
+                size_t len = 0;
+                if (schedule->type == ASCC_TYPE_DAILY_REPEATING) {
+                    ptr = (void*)&schedule_data.daily_repeating_schedules[schedule->slot_id-1];
+                    len = sizeof(daily_repeating_nvm_t);
+                } else if (schedule->type == ASCC_TYPE_YEAR_DAY) {
+                    ptr = (void*)&schedule_data.daily_repeating_schedules[schedule->slot_id-1];
+                    len = sizeof(daily_repeating_nvm_t);
+                }
+                if (ptr) {
+                    memset(ptr, 0x00, len);
+                    // Back up updated mirror to NVM
+                    if (app_nvm(U3C_WRITE, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                        result.result = ASCC_OPERATION_SUCCESS;
+                    }
+                }
+            }
+        }
+    } else if (operation == ASCC_OP_TYPE_MODIFY &&
+               schedule->slot_id != 0 && schedule->target.target_id != 0) {
+        uint16_t offset = 0;
+        schedule_metadata_nvm_t schedule_data = { 0 };
+        if (app_db_get_user_offset_from_id(schedule->target.target_id, &offset) &&
+                app_nvm(U3C_READ, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            // Update information in local flash mirror
+            if (schedule->type == ASCC_TYPE_DAILY_REPEATING) {
+                daily_repeating_nvm_t * tmp = &schedule_data.daily_repeating_schedules[schedule->slot_id-1];
+                memcpy(&tmp->schedule, 
+                        &schedule->data.schedule.daily_repeating,
+                        sizeof(ascc_daily_repeating_schedule_t));
+                tmp->occupied = true;
+            } else if (schedule->type == ASCC_TYPE_YEAR_DAY) {
+                year_day_nvm_t * tmp = &schedule_data.year_day_schedules[schedule->slot_id-1];
+                memcpy(&schedule_data.year_day_schedules[schedule->slot_id-1].schedule, 
+                        &schedule->data.schedule.year_day,
+                        sizeof(ascc_daily_repeating_schedule_t));
+                tmp->occupied = true;
+            }
+            // Back up updated mirror to NVM
+            if (app_nvm(U3C_WRITE, AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                result.result = ASCC_OPERATION_SUCCESS;
+            }
+        }
+    }
     return result;
+}
+
+/**
+ * @brief Clears all schedules for a given block of metadata and schedule type
+ * 
+ * @param schedule_data Schedule metadata for a user
+ * @param schedule_type Which type of schedule to clear
+ */
+static void clear_all_schedules_for_user_by_type(
+    schedule_metadata_nvm_t * schedule_data, 
+    const ascc_type_t type)
+{
+    void* start = NULL;
+    size_t size = 0;
+    if (type == ASCC_TYPE_DAILY_REPEATING) {
+        start = (void*)&schedule_data->daily_repeating_schedules;
+        size = sizeof(daily_repeating_nvm_t) * MAX_DAILY_REPEATING_SCHEDULES_PER_USER;
+    } else if (type == ASCC_TYPE_YEAR_DAY) {
+        start = (void*)&schedule_data->year_day_schedules;
+        size = sizeof(year_day_nvm_t) * MAX_YEAR_DAY_SCHEDULES_PER_USER;
+    }
+    memset(start, 0x00, size); 
+}
+
+/**
+ * @brief Retrieves the first occupied schedule slot (1-indexed) from a schedule information entry.
+ * 
+ * @returns First occupied slot, or 0 if there are no occupied indices.
+ */
+static uint16_t get_first_schedule_slot(const schedule_metadata_nvm_t * schedule_data, const ascc_type_t type)
+{
+    return get_next_schedule_index(schedule_data, 0);
+}
+
+/**
+ * @brief Retrieves the next occupied 1-indexed schedule slot, starting from a known offset.
+ *        If 
+ * @param schedule_data Schedule information for a user from NVM
+ * @param type          Which schedule type to parse
+ * @param current_slot  Current schedule slot (1-index). Passing in 0 in this parameter will 
+ *                      return the first occupied slot for the given user and schedule type.
+ * @returns Next occupied slot, or 0 if there are no more occupied slots.
+ */
+static uint16_t get_next_schedule_slot(
+    const schedule_metadata_nvm_t * schedule_data, 
+    const ascc_type_t type,
+    const uint16_t current_slot)
+{
+    ASSERT(schedule_data != NULL);
+    uint16_t index = current_slot;
+    bool occupied = false;
+    uint16_t max_slot = app_db_get_schedule_count(type);
+    if (type == ASCC_TYPE_DAILY_REPEATING) {
+        while (!occupied && index < max_slot) {
+            if (schedule_data->daily_repeating_schedules[index++].occupied) {
+                occupied = true;
+            }
+        }
+    } else if (type == ASCC_TYPE_YEAR_DAY) {
+        while (!occupied && index < max_slot) {
+            if (schedule_data->year_day_schedules[index++].occupied) {
+                occupied = true;
+            }
+        }
+    }
+    // Index has increased by one, so it matches the slot number
+    return occupied ? index : 0; 
 }
 
 /**
@@ -346,7 +545,7 @@ static bool is_time_stamp_valid(const ascc_time_stamp_t * const timestamp)
         return false;
     }
     // Get target day count based on month
-    uint8_t days = day_count[timestamp->month];
+    uint8_t days = m_day_count[timestamp->month];
     // Make sure this isn't february during a leap year
     if (timestamp->month == FEB_INDEX && 
           timestamp->year % LEAP_YEAR_CADENCE) {

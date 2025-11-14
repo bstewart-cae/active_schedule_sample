@@ -32,6 +32,7 @@ extern "C" {
 /****************************************************************************
  *                     EXPORTED TYPES and DEFINITIONS                       *
  ****************************************************************************/
+#define MAX_SCHEDULE_PER_USER 32 //< DO NOT EDIT!
 
 #ifndef MAX_YEAR_DAY_SCHEDULES_PER_USER
 /**
@@ -47,6 +48,10 @@ extern "C" {
 #define MAX_DAILY_REPEATING_SCHEDULES_PER_USER 3
 #endif
 
+#if (MAX_YEAR_DAY_SCHEDULES_PER_USER > MAX_SCHEDULE_PER_USER) || \
+    (MAX_DAILY_REPEATING_SCHEDULES_PER_USER > MAX_SCHEDULE_PER_USER)
+#error "Due to limitations of the application sample, please limit schedules to 32 per user or fewer"
+#endif 
 /**
  * @brief Maximum number of User and User Name objects that can be stored in the NVM
  */
