@@ -17,7 +17,7 @@ if(NOT TARGET DoorLockKeyPad_hw)
 endif()
 
 set(ZW_INCLUDES
-  # None.
+  ${CMAKE_CURRENT_LIST_DIR}/database
 )
 
 set(APP_SOURCES_REGION
@@ -27,9 +27,10 @@ set(APP_SOURCES_REGION
 set(APP_SOURCES
   app_credentials.c
   app_cc_event_handlers.c
+  ${CMAKE_CURRENT_LIST_DIR}/database/app_database.c
+  ${CMAKE_CURRENT_LIST_DIR}/database/app_database_u3c.c
+  ${CMAKE_CURRENT_LIST_DIR}/database/app_database_ascc.c
 )
-
-add_subdirectory(database)
 
 set(ZW_DEFINITIONS
   ZAF_CONFIG_PRODUCT_ID=1

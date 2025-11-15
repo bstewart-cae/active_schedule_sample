@@ -13,16 +13,15 @@
  * @copyright 2025 Card Access Engineering, LLC
  */
 
-/*
+ /*
  * Verify that we're only pulling in one implementation of the
  * nvm database.
  */
 #ifdef CC_USER_CREDENTIAL_NVM
-#error "User Credential database already defined, check includes
-#endif
-
-#ifndef CC_USER_CREDENTIAL_NVM
+#error "User Credential database already defined, check includes"
+#else
 #define CC_USER_CREDENTIAL_NVM
+
 
 #include "database_properties.h" 
 #include "CC_ActiveSchedule.h"
@@ -162,7 +161,8 @@ uint16_t app_db_get_num_users(void);
 uint16_t app_db_get_num_creds(void);
 
 /**
- * @brief Active Schedule CC requires that ;
+ * @brief Active Schedule CC requires that separate function stubs be provided
+ *        to the stack so for each CC that is scheduled.
  */
 void app_db_initialize_handlers(void);
 
