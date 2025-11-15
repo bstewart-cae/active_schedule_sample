@@ -21,6 +21,7 @@
 // Module includes should always go first and be listed alphabetically
 
 // Stack/SDK includes should always go second to last and be listed alphabetically
+#include "ZAF_file_ids.h"
 
 // Language includes should always go last and be listed alphabetically
 
@@ -51,7 +52,8 @@ extern "C" {
 #if (MAX_YEAR_DAY_SCHEDULES_PER_USER > MAX_SCHEDULE_PER_USER) || \
     (MAX_DAILY_REPEATING_SCHEDULES_PER_USER > MAX_SCHEDULE_PER_USER)
 #error "Due to limitations of the application sample, please limit schedules to 32 per user or fewer"
-#endif 
+#endif
+
 /**
  * @brief Maximum number of User and User Name objects that can be stored in the NVM
  */

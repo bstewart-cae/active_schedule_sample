@@ -21,10 +21,12 @@
 #include "app_database.h"
 
 // Stack/SDK includes should always go second to last and be listed alphabetically
+#include "cc_user_credential_config_api.h"
 #include "cc_user_credential_io_config.h"
 #include "cc_user_credential_io.h"
 
 // Language includes should always go last and be listed alphabetically
+#include "string.h"
 
 /****************************************************************************
  *                     PRIVATE TYPES AND DECLARATIONS                       *
@@ -134,7 +136,6 @@ bool app_db_get_user_offset_from_id(const uint16_t uuid, uint16_t * offset)
 u3c_db_operation_result CC_UserCredential_get_user(
   uint16_t unique_identifier, u3c_user_t * user, uint8_t * name)
 {
-  const n_users = app_db_get_n_users();
   // Check if the database is empty
   if (n_users < 1) {
     return U3C_DB_OPERATION_RESULT_FAIL_DNE;
@@ -823,13 +824,14 @@ void CC_UserCredential_factory_reset(void)
   user_descriptor_t user_desciptors[1] = { 0 };
   credential_descriptor_t credential_descriptors[1] = { 0 };
   admin_pin_code_metadata_nvm_t ac = { 0 };
-  nvm(U3C_WRITE, AREA_USER_DESCRIPTORS, 0, user_desciptors, 0);
-  nvm(U3C_WRITE, AREA_CREDENTIAL_DESCRIPTORS, 0, credential_descriptors, 0);
+  app_nvm(U3C_WRITE, AREA_USER_DESCRIPTORS, 0, user_desciptors, 0);
+  app_nvm(U3C_WRITE, AREA_CREDENTIAL_DESCRIPTORS, 0, credential_descriptors, 0);
   // Initialize static database variables
-  nvm(U3C_WRITE, AREA_NUMBER_OF_USERS, 0, &n_users, 0);
-  nvm(U3C_WRITE, AREA_NUMBER_OF_CREDENTIALS, 0, &n_credentials, 0);
+  app_nvm(U3C_WRITE, AREA_NUMBER_OF_USERS, 0, &n_users, 0);
+  app_nvm(U3C_WRITE, AREA_NUMBER_OF_CREDENTIALS, 0, &n_credentials, 0);
   // Initialize admin code area
-  nvm(U3C_WRITE, AREA_ADMIN_PIN_CODE_DATA, 0, &ac, 0);
+  app_nvm(U3C_WRITE, AREA_ADMIN_PIN_CODE_DATA, 0, &ac, 0);
+  app_db_reset_schedules();
   init_database_variables();
 }
 
@@ -837,14 +839,15 @@ void CC_UserCredential_init_database(void)
 {
   // Read stored variables, or initialize them to factory defaults if unset
   bool is_nvm_initialized = true;
-  is_nvm_initialized &= nvm(U3C_READ, AREA_NUMBER_OF_USERS, 0, &n_users, 0);
-  is_nvm_initialized &= nvm(U3C_READ, AREA_NUMBER_OF_CREDENTIALS, 0, &n_credentials, 0);
+  is_nvm_initialized &= app_nvm(U3C_READ, AREA_NUMBER_OF_USERS, 0, &n_users, 0);
+  is_nvm_initialized &= app_nvm(U3C_READ, AREA_NUMBER_OF_CREDENTIALS, 0, &n_credentials, 0);
   if (!is_nvm_initialized
       || n_users == UINT16_MAX || n_credentials == UINT16_MAX
       ) {
     CC_UserCredential_factory_reset();
   } else {
     init_database_variables();
+    app_db_initialize_handlers();
   }
 }
 /****************************************************************************
@@ -921,7 +924,6 @@ bool convert_credential_metadata_from_nvm(
 
 static void ordered_insert_user_descriptor(user_descriptor_t * users, u3c_user_t * user, uint16_t offset)
 {
-  const uint16_t n_users = app_db_get_n_users();
   uint16_t insert_index = n_users;
 
   // Find the correct position to insert the new user
@@ -1001,7 +1003,7 @@ bool is_user_identical(
 {
   // Check whether the incoming and stored metadata are identical
   u3c_user_t stored_user = { 0 };
-  if (!nvm(U3C_READ, AREA_USERS, object_offset, &stored_user, 0)) {
+  if (!app_nvm(U3C_READ, AREA_USERS, object_offset, &stored_user, 0)) {
     return false; // Database error
   }
   if (
@@ -1021,7 +1023,7 @@ bool is_user_identical(
   // Check whether the incoming and stored names are identical
   if (p_name) {
     uint8_t stored_name[U3C_BUFFER_SIZE_USER_NAME] = { 0 };
-    if (!nvm(U3C_READ, AREA_USER_NAMES, object_offset, stored_name,
+    if (!app_nvm(U3C_READ, AREA_USER_NAMES, object_offset, stored_name,
              stored_user.name_length)
         ) {
       return false; // Database error
@@ -1038,7 +1040,7 @@ bool is_credential_identical(
 {
   // Check whether the incoming and stored metadata are identical
   credential_metadata_nvm_t stored_metadata = { 0 };
-  if (!nvm(U3C_READ, AREA_CREDENTIAL_METADATA, object_offset,
+  if (!app_nvm(U3C_READ, AREA_CREDENTIAL_METADATA, object_offset,
            &stored_metadata, 0)
       ) {
     return false; // Database error
@@ -1053,7 +1055,7 @@ bool is_credential_identical(
 
   // Check whether the incoming and stored credential data are identical
   uint8_t stored_data[U3C_BUFFER_SIZE_USER_NAME] = { 0 };
-  if (!nvm(U3C_READ, AREA_CREDENTIAL_DATA, object_offset, stored_data,
+  if (!app_nvm(U3C_READ, AREA_CREDENTIAL_DATA, object_offset, stored_data,
            stored_metadata.length)
       ) {
     return false; // Database error

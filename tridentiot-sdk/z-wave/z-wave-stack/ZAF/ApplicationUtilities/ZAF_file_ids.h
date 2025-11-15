@@ -80,12 +80,12 @@
  */
 #define ZAF_FILE_ID_ADMIN_PIN_CODE (1996)
 /**
- * V2 Changes: Key Locker and Active Schedule
+ * U3CV2 Changes: Key Locker
  */
 #define ZAF_FILE_ID_CC_USER_CREDENTIAL_KEY_LOCKER_BASE (1997)
 #define ZAF_FILE_ID_CC_USER_CREDENTIAL_KEY_LOCKER_LAST (2252)
 /**
- * Schedule data storage
+ * U3CV2 Changes: Active Schedule integration data storage
  * 
  * Because this is the same layout as the users, this will 
  * follow the same mapping as is found in the descriptor table.
