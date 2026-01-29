@@ -24,7 +24,7 @@ ZW_WEAK void CC_UserCredential_UserCapabilitiesGet_handler(cc_handler_output_t *
 {
   ZW_USER_CAPABILITIES_REPORT_2BYTE_FRAME * pReport = &output->frame->ZW_UserCapabilitiesReport2byteFrame;
   uint16_t max_user_unique_identifers =
-    cc_user_credential_get_max_user_unique_idenfitiers();
+    cc_user_credential_get_max_user_unique_identifiers();
   uint16_t supported_user_types_bit_mask = 0;
   for (uint8_t i = 0; i < sizeof(u3c_user_type_numeric_value); ++i) {
     uint8_t type = u3c_user_type_numeric_value[i];
@@ -44,10 +44,8 @@ ZW_WEAK void CC_UserCredential_UserCapabilitiesGet_handler(cc_handler_output_t *
 
   pReport->maxLengthOfUserName = cc_user_credential_get_max_length_of_user_name();
 
-  // #TODO: Implement support for User Schedule
-
   pReport->properties1 =
-    ((0 << 7) & USER_CAPABILITIES_REPORT_PROPERTIES1_USER_SCHEDULE_SUPPORT_BIT_MASK)
+    ((cc_user_credential_is_user_scheduling_supported() << 7) & USER_CAPABILITIES_REPORT_PROPERTIES1_USER_SCHEDULE_SUPPORT_BIT_MASK)
     | ((cc_user_credential_is_all_users_checksum_supported() << 6) & USER_CAPABILITIES_REPORT_PROPERTIES1_ALL_USERS_CHECKSUM_SUPPORT_BIT_MASK)
     | ((cc_user_credential_is_user_checksum_supported() << 5) & USER_CAPABILITIES_REPORT_PROPERTIES1_USER_CHECKSUM_SUPPORT_BIT_MASK);
 

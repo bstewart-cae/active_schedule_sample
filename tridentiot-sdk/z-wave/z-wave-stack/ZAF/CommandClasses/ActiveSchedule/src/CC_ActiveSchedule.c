@@ -1,6 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
- * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC.
+ * SPDX-FileCopyrightText: 2025 Z-Wave Alliance <https://z-wavealliance.org>
+ * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC. <https://www.caengineering.com>
  */
 /**
  * @file CC_ActiveSchedule.c
@@ -27,7 +28,7 @@
 /****************************************************************************
 *                              INCLUDE FILES                               *
 ****************************************************************************/
-// Comment out line below to get rid of assert errors in the open source SDK
+// Comment out line below to get rid of assert errors when building for the Silicon Labs SDK
 #define OPEN_SOURCE_ASSERT
 
 #ifdef OPEN_SOURCE_ASSERT
@@ -152,15 +153,8 @@ static void send_report(const cc_handler_input_t * const in_report,
 /* Inline helpers */
 static inline uint8_t * pack_two_byte(uint8_t *byteptr, const uint16_t value)
 {
-#if __GNUC__
-#if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-  *((uint16_t*)byteptr++) = (uint16_t)value;
-  byteptr++;
-#elif (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
   *byteptr++ = (uint8_t)((value >> 8) & 0xFF);
   *byteptr++ = (uint8_t)(value & 0xFF);
-#endif /* __BYTE_ORDER__ */
-#endif /* __GNUC__ */
   return byteptr;
 }
 
@@ -174,37 +168,37 @@ static inline uint8_t * pack_two_byte(uint8_t *byteptr, const uint16_t value)
 static struct {
   uint8_t num_ccs_registered;
   ascc_handler_collection_t callbacks[CC_ACTIVE_SCHEDULE_MAX_NUM_SUPPORTED_CCS];
-} b_cc_handler_map;
+} m_cc_handler_map;
 
 /**
  * @brief Cached RX options of current frame.
  *
  * @note Automatically set to null upon handler exit.
  */
-static RECEIVE_OPTIONS_TYPE_EX * b_rx_opts;
+static RECEIVE_OPTIONS_TYPE_EX * m_rx_opts;
 
 /**
  * @brief Cached TSE RX options for triggering
  */
-static RECEIVE_OPTIONS_TYPE_EX tse_current_rx_opts;
+static RECEIVE_OPTIONS_TYPE_EX m_tse_current_rx_opts;
 
 /* Statically allocated output buffer for lifeline report transmission */
-static ZW_APPLICATION_TX_BUFFER yd_report_buf;
-static ZW_APPLICATION_TX_BUFFER dr_report_buf;
-static ZW_APPLICATION_TX_BUFFER se_report_buf;
+static ZW_APPLICATION_TX_BUFFER m_yd_report_buf;
+static ZW_APPLICATION_TX_BUFFER m_dr_report_buf;
+static ZW_APPLICATION_TX_BUFFER m_se_report_buf;
 
-static cc_handler_input_t tse_sched_yd_report = { 0 };
-static cc_handler_input_t tse_sched_dr_report = { 0 };
-static cc_handler_input_t tse_sched_enable_report = { 0 };
+static cc_handler_input_t m_tse_sched_yd_report = { 0 };
+static cc_handler_input_t m_tse_sched_dr_report = { 0 };
+static cc_handler_input_t m_tse_sched_enable_report = { 0 };
 
 /****************************************************************************
 *                  EXPORTED HEADER FUNCTION DEFINITIONS                    *
 ****************************************************************************/
 bool CC_ActiveSchedule_Get_Current_Frame_Options(RECEIVE_OPTIONS_TYPE_EX * rx_opts)
 {
-  if (b_rx_opts
+  if (m_rx_opts
       && rx_opts) {
-    *rx_opts = *b_rx_opts;
+    *rx_opts = *m_rx_opts;
     return true;
   }
   return false;
@@ -217,7 +211,7 @@ void CC_ActiveSchedule_Enable_Report_tx(const ascc_report_type_t report_type,
 {
   cc_handler_input_t out_frame = {
     .rx_options = rx_opts,
-    .frame = &se_report_buf,
+    .frame = &m_se_report_buf,
   };
 
   pack_enable_report_frame(
@@ -238,7 +232,7 @@ void CC_ActiveSchedule_Enable_Report_tx(const ascc_report_type_t report_type,
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
   send_report(&out_frame,
-              &tse_sched_enable_report,
+              &m_tse_sched_enable_report,
               notify_lifeline);
 }
 
@@ -250,7 +244,7 @@ void CC_ActiveSchedule_YearDay_Schedule_Report_tx(
 {
   cc_handler_input_t out_frame = {
     .rx_options = rx_opts,
-    .frame = &yd_report_buf
+    .frame = &m_yd_report_buf
   };
 
   pack_year_day_report_frame(
@@ -271,7 +265,7 @@ void CC_ActiveSchedule_YearDay_Schedule_Report_tx(
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
   send_report(&out_frame,
-              &tse_sched_yd_report,
+              &m_tse_sched_yd_report,
               notify_lifeline);
 }
 
@@ -283,7 +277,7 @@ void CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
 {
   cc_handler_input_t out_frame = {
     .rx_options = rx_opts,
-    .frame = &dr_report_buf,
+    .frame = &m_dr_report_buf,
   };
 
   pack_daily_repeating_report_frame(
@@ -304,7 +298,7 @@ void CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
   send_report(&out_frame,
-              &tse_sched_dr_report,
+              &m_tse_sched_dr_report,
               notify_lifeline);
 }
 
@@ -312,7 +306,7 @@ ZW_WEAK void CC_ActiveSchedule_RegisterCallbacks(uint8_t command_class_id,
                                                  const ascc_target_stubs_t * callbacks)
 {
   // Error out if map is full
-  ASSERT(b_cc_handler_map.num_ccs_registered < cc_active_schedule_get_num_supported_ccs());
+  ASSERT(m_cc_handler_map.num_ccs_registered < cc_active_schedule_get_num_supported_ccs());
 
   uint8_t index = 0;
   uint8_t cc_value = 0;
@@ -321,7 +315,7 @@ ZW_WEAK void CC_ActiveSchedule_RegisterCallbacks(uint8_t command_class_id,
    * if the CC has already been registered
    */
   do {
-    cc_value = b_cc_handler_map.callbacks[index++].cc_id;
+    cc_value = m_cc_handler_map.callbacks[index++].cc_id;
   } while (cc_value != 0
            && cc_value != command_class_id
            && index < cc_active_schedule_get_num_supported_ccs());
@@ -332,12 +326,12 @@ ZW_WEAK void CC_ActiveSchedule_RegisterCallbacks(uint8_t command_class_id,
   --index;
   ASSERT(index < cc_active_schedule_get_num_supported_ccs());
 
-  ascc_handler_collection_t * handler = &b_cc_handler_map.callbacks[index];
+  ascc_handler_collection_t * handler = &m_cc_handler_map.callbacks[index];
   memcpy(&handler->callbacks, callbacks, sizeof(ascc_target_stubs_t));
   handler->cc_id = command_class_id;
   // Increment number of command classes registered ONLY IF this is a new CC
   if (cc_value == 0) {
-    b_cc_handler_map.num_ccs_registered++;
+    m_cc_handler_map.num_ccs_registered++;
   }
 }
 
@@ -377,7 +371,7 @@ ZW_WEAK bool cc_active_schedule_is_cc_supported(const uint8_t cc_id)
 static bool get_cc_map_index(uint8_t cc_id, uint8_t * index)
 {
   for (int i = 0; i < CC_ACTIVE_SCHEDULE_MAX_NUM_SUPPORTED_CCS; i++) {
-    if (b_cc_handler_map.callbacks[i].cc_id == cc_id) {
+    if (m_cc_handler_map.callbacks[i].cc_id == cc_id) {
       if (index) {
         *index = i;
       }
@@ -401,7 +395,7 @@ static bool get_stubs_by_cc(const uint8_t cc_id,
   bool result = false;
   uint8_t index;
   if (get_cc_map_index(cc_id, &index)) {
-    ascc_target_stubs_t * b_stubs = &b_cc_handler_map.callbacks[index].callbacks;
+    ascc_target_stubs_t * b_stubs = &m_cc_handler_map.callbacks[index].callbacks;
     if (b_stubs) {
       *stubs = b_stubs;
       result = true;
@@ -701,7 +695,7 @@ static received_frame_status_t validate_and_set_schedule(ascc_op_type_t operatio
 static received_frame_status_t CC_ActiveSchedule_CapabilitesGet_handler(cc_handler_output_t * output)
 {
   received_frame_status_t status = RECEIVED_FRAME_STATUS_NO_SUPPORT;
-  uint8_t count = b_cc_handler_map.num_ccs_registered;
+  uint8_t count = m_cc_handler_map.num_ccs_registered;
   if (count > 0) {
     ZW_ACTIVE_SCHEDULE_CAPABILITIES_REPORT_1BYTE_FRAME *p_report = &output->frame->ZW_ActiveScheduleCapabilitiesReport1byteFrame;
     p_report->cmdClass = COMMAND_CLASS_ACTIVE_SCHEDULE;
@@ -710,28 +704,28 @@ static received_frame_status_t CC_ActiveSchedule_CapabilitesGet_handler(cc_handl
     uint8_t *ptr = (uint8_t*)&p_report->supportedTargetCc1;
     /* List all supported CCs */
     for (int i = 0; i < count; i++) {
-      *ptr++ = b_cc_handler_map.callbacks[i].cc_id;
+      *ptr++ = m_cc_handler_map.callbacks[i].cc_id;
     }
     /* Get and list supported number of targets per CC */
     for (int i = 0; i < count; i++) {
-      if (b_cc_handler_map.callbacks[i].callbacks.get_target_count) {
-        ptr = pack_two_byte(ptr, b_cc_handler_map.callbacks[i].callbacks.get_target_count());
+      if (m_cc_handler_map.callbacks[i].callbacks.get_target_count) {
+        ptr = pack_two_byte(ptr, m_cc_handler_map.callbacks[i].callbacks.get_target_count());
       } else {
         ptr = pack_two_byte(ptr, 0x00);
       }
     }
     /* Get and list supported number of Year Day Schedules per target */
     for (int i = 0; i < count; i++) {
-      if (b_cc_handler_map.callbacks[i].callbacks.get_schedule_count) {
-        ptr = pack_two_byte(ptr, b_cc_handler_map.callbacks[i].callbacks.get_schedule_count(ASCC_TYPE_YEAR_DAY));
+      if (m_cc_handler_map.callbacks[i].callbacks.get_schedule_count) {
+        ptr = pack_two_byte(ptr, m_cc_handler_map.callbacks[i].callbacks.get_schedule_count(ASCC_TYPE_YEAR_DAY));
       } else {
         ptr = pack_two_byte(ptr, 0x00);
       }
     }
     /* Get and list supported number of Daily Repeating Schedules per target */
     for (int i = 0; i < count; i++) {
-      if (b_cc_handler_map.callbacks[i].callbacks.get_schedule_count) {
-        ptr = pack_two_byte(ptr, b_cc_handler_map.callbacks[i].callbacks.get_schedule_count(ASCC_TYPE_DAILY_REPEATING));
+      if (m_cc_handler_map.callbacks[i].callbacks.get_schedule_count) {
+        ptr = pack_two_byte(ptr, m_cc_handler_map.callbacks[i].callbacks.get_schedule_count(ASCC_TYPE_DAILY_REPEATING));
       } else {
         ptr = pack_two_byte(ptr, 0x00);
       }
@@ -1041,7 +1035,7 @@ static received_frame_status_t CC_ActiveSchedule_handler(cc_handler_input_t * in
                                                          cc_handler_output_t * output)
 {
   received_frame_status_t status = RECEIVED_FRAME_STATUS_FAIL;
-  b_rx_opts = input->rx_options;
+  m_rx_opts = input->rx_options;
   // Check all target-independent function(s) first.
   if (input->frame->ZW_Common.cmd == ACTIVE_SCHEDULE_CAPABILITIES_GET) {
     status = CC_ActiveSchedule_CapabilitesGet_handler(output);
@@ -1079,7 +1073,7 @@ static received_frame_status_t CC_ActiveSchedule_handler(cc_handler_input_t * in
   }
 
   // Reset current RX options
-  b_rx_opts = NULL;
+  m_rx_opts = NULL;
   return status;
 }
 
@@ -1159,19 +1153,19 @@ static void ascc_event_handler(const uint8_t event,
     case ASCC_APP_EVENT_ON_SET_SCHEDULE_COMPLETE: {
       const ascc_sched_event_data_t* data = (ascc_sched_event_data_t *)p_data;
       // Avoid const warning
-      tse_current_rx_opts = data->rx_opts;
+      m_tse_current_rx_opts = data->rx_opts;
       if (data->schedule.type == ASCC_TYPE_YEAR_DAY) {
         CC_ActiveSchedule_YearDay_Schedule_Report_tx(
           data->report_type,
           &data->schedule,
           data->next_schedule_slot,
-          &tse_current_rx_opts);
+          &m_tse_current_rx_opts);
       } else if (data->schedule.type == ASCC_TYPE_DAILY_REPEATING) {
         CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
           data->report_type,
           &data->schedule,
           data->next_schedule_slot,
-          &tse_current_rx_opts);
+          &m_tse_current_rx_opts);
       }
 
       break;

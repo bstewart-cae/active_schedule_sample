@@ -17,6 +17,14 @@ include_directories(app)
 set(APP_NAME ${CMAKE_PROJECT_NAME})
 set(ACTIVE_SCHEDULE_SAMPLE_TARGET_NAME_TEMPLATE "{{name}}_{{hardware}}.elf")
 
+add_compile_options(
+  -Wall
+  -Werror
+  -Werror=vla
+  -Wparentheses
+  -g3
+)
+
 add_subdirectory(tridentiot-sdk/z-wave)
 add_subdirectory(hardware)
 add_subdirectory(app)

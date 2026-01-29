@@ -8,7 +8,6 @@ if(NOT DEFINED APP_NAME)
 endif()
 
 if(NOT TARGET DoorLockKeyPad_hw)
-  # This library is required by the x86 build only.
   add_library(DoorLockKeyPad_hw INTERFACE)
   target_link_libraries(DoorLockKeyPad_hw
     INTERFACE
@@ -17,7 +16,8 @@ if(NOT TARGET DoorLockKeyPad_hw)
 endif()
 
 set(ZW_INCLUDES
-  ${CMAKE_CURRENT_LIST_DIR}/database
+  database
+  database/schedules/inc
 )
 
 set(APP_SOURCES_REGION
@@ -27,9 +27,8 @@ set(APP_SOURCES_REGION
 set(APP_SOURCES
   app_credentials.c
   app_cc_event_handlers.c
-  ${CMAKE_CURRENT_LIST_DIR}/database/app_database.c
-  ${CMAKE_CURRENT_LIST_DIR}/database/app_database_u3c.c
-  ${CMAKE_CURRENT_LIST_DIR}/database/app_database_ascc.c
+  database/database_common.c
+  database/schedules/src/app_schedules.c
 )
 
 set(ZW_DEFINITIONS
@@ -51,6 +50,7 @@ set(ZW_DEFINITIONS
   # values in cc_user_credential_config.h.
   CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS=5
   CC_USER_CREDENTIAL_MAX_LENGTH_USER_NAME=10
+  CC_USER_CREDENTIAL_USER_SCHEDULING_SUPPORTED=1
 )
 
 IF( CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Debug )
@@ -72,11 +72,12 @@ IF( CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES Debug )
     CC_UserCode_UserCredential
     CC_UserCredential
     CC_UserCredential_config
+    CC_UserCredential_nvm
   )
 
-# IF(CMAKE_BUILD_TYPE MATCHES Debug)
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
   list(APPEND ZW_LIBS ZAF_DEBUGPRINT)
-# ENDIF()
+ENDIF()
 
   zw_create_app(
     NAME "${APP_NAME}"

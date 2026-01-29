@@ -1,7 +1,9 @@
-/**
+/*
  * SPDX-License-Identifier: BSD-3-Clause
- * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC.
- *
+ * SPDX-FileCopyrightText: 2025 Z-Wave Alliance <https://z-wavealliance.org>
+ * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC. <https://www.caengineering.com>
+ */
+/**
  * @file CC_ActiveSchedule_types.h
  * Defines helper structures and data types for the Active Schedule CC handler code.
  *
@@ -51,7 +53,7 @@ typedef enum _ascc_app_event_ {
   ASCC_APP_EVENT_ON_SET_SCHEDULE_COMPLETE,
   ASCC_APP_EVENT_ON_GET_SCHEDULE_STATE_COMPLETE,
   ASCC_APP_EVENT_ON_SET_SCHEDULE_STATE_COMPLETE,
-  ASCC_APP_EVENT_ON_SCHEDULE_STATE_CHANGE,                ///< supporting node signals to the stack that a
+  ASCC_APP_EVENT_ON_SCHEDULE_STATE_CHANGE,                ///< End node signals to the stack that a
                                                           ///  schedule has updated to a new state.
                                                           ///  Currently unused, but desired.
 } ascc_app_event_t;
@@ -128,16 +130,9 @@ typedef enum _ascc_report_type_t_ {
   ASCC_REP_TYPE_MODIFY_ZWAVE    = ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_REPORT_CODE_SCHEDULE_MODIFIED_Z_WAVE
 } ascc_report_type_t;
 
-/* 
- * In some cases, we want to be able to cast chunks of these structs to run
- * some verification logic, this allows us to peek into struct in a predictable manner 
- * without reallocating into another struct or passing large numbers of parameters on the
- * stack. It also allows us to rigidly define the size of the struct.
- */
-#pragma pack(push, 1)
 /**
  * @brief Defines the time fence for a year day schedule.
- * 
+ *
  * @note Unlike SEL, ASCC uses the Gregorian year rather than an epoch.
  *       For example, a year value for 2026 would be
  *       saved directly as an integer value 0x07EA (2026).
@@ -164,9 +159,7 @@ typedef struct _ascc_daily_repeating_schedule {
   uint8_t start_minute;
   uint8_t duration_hour;
   uint8_t duration_minute;
-  uint8_t padding[3]; //< Forces 8 byte packing size
 } ascc_daily_repeating_schedule_t;
-#pragma pack(pop)
 
 /**
  * @brief Defines a common schedule structure for easier handling and manipulation
@@ -277,7 +270,7 @@ typedef bool (*ascc_schedule_data_validation_stub_t)(const ascc_schedule_t * con
  *          ASCC_OPERATION_RESULT_SUCCESS for successful get
  *          ASCC_OPERATION_RESULT_WORKING for successful initiation of get process.
  *              Application assumes responsibility for appropriate report handling.
- *          ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult supporting node documentation.
+ *          ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult end node documentation.
  */
 typedef ascc_op_result_t (*ascc_get_schedule_state_stub_t)(const ascc_target_t * const target,
                                                            bool * state);
@@ -293,7 +286,7 @@ typedef ascc_op_result_t (*ascc_get_schedule_state_stub_t)(const ascc_target_t *
  *         ASCC_OPERATION_RESULT_SUCCESS for successful set
  *         ASCC_OPERATION_RESULT_WORKING for successful initiation of set process.
  *             Application assumes responsibility for appropriate report handling.
- *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult supporting node documentation.
+ *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult end node documentation.
  */
 typedef ascc_op_result_t (*ascc_set_schedule_state_stub_t)(const ascc_target_t * const target,
                                                            const bool state);
@@ -312,7 +305,7 @@ typedef ascc_op_result_t (*ascc_set_schedule_state_stub_t)(const ascc_target_t *
  *         ASCC_OPERATION_RESULT_SUCCESS for successful get
  *         ASCC_OPERATION_RESULT_WORKING for successful initiation of get process.
  * `            Application assumes responsibility for appropriate report handling.
- *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult supporting node documentation.
+ *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful get operation. Consult end node documentation.
  */
 typedef ascc_op_result_t (*ascc_get_schedule_data_stub_t)(const ascc_type_t schedule_type,
                                                           const uint16_t slot,
@@ -332,7 +325,7 @@ typedef ascc_op_result_t (*ascc_get_schedule_data_stub_t)(const ascc_type_t sche
  *         ASCC_OPERATION_RESULT_SUCCESS for successful set
  *         ASCC_OPERATION_RESULT_WORKING for successful initiation of set process.
  * `            Application assumes responsibility for appropriate report handling.
- *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult supporting node documentation.
+ *         ASCC_OPERATION_RESULT_FAILURE for unsuccessful set operation. Consult end node documentation.
  */
 typedef ascc_op_result_t (*ascc_set_schedule_data_stub_t)(const ascc_op_type_t operation,
                                                           const ascc_schedule_t * const schedule,

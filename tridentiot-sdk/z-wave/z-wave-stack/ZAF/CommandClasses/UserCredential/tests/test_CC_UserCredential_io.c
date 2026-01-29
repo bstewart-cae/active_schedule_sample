@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 #include "unity.h"
 #include "test_common.h"
 #include "ZW_classcmd.h"
@@ -93,7 +100,7 @@ void setUp(void)
   ZAF_nvm_write_IgnoreAndReturn(ZPAL_STATUS_OK);
   ZAF_nvm_write_IgnoreAndReturn(ZPAL_STATUS_OK);
   ZAF_nvm_write_IgnoreAndReturn(ZPAL_STATUS_OK);
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS);
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS);
 
   CC_UserCredential_factory_reset();
 

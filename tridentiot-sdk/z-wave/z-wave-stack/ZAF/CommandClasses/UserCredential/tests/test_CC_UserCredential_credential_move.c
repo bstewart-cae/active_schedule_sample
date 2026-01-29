@@ -33,40 +33,33 @@ void tearDown(void)
 /**
  * Verifies that a User Unique Identifier Credential Association Set command
  * is accepted when the arguments are correct and rejected when:
- * - The Source Credential Type is not supported
- * - The Source Credential Slot is zero
- * - The Source Credential Slot is too large
- * - The Source Credential Slot is empty
+ * - The Credential Type is not supported
+ * - The Credential Slot is zero
+ * - The Credential Slot is too large
+ * - The Credential Slot is empty
  * - The Destination User Unique Identifier is zero
  * - The Destination User Unique Identifier is too large
  * - The Destination User Unique Identifier does not exist
- * - The Destination Credential Slot is zero
- * - The Destination Credential Slot is too large
- * - The Destination Credential Slot is occupied
  */
 void test_USER_CREDENTIAL_uuid_credential_association_set(void)
 {
   typedef enum test_case_ {
     TC_CONTROL,
     TC_TYPE_INVALID,
-    TC_SRC_SLOT_ZERO,
-    TC_SRC_SLOT_TOO_LARGE,
-    TC_SRC_SLOT_EMPTY,
+    TC_SLOT_ZERO,
+    TC_SLOT_TOO_LARGE,
+    TC_SLOT_EMPTY,
     TC_DST_UUID_ZERO,
     TC_DST_UUID_TOO_LARGE,
     TC_DST_UUID_DNE,
-    TC_DST_SLOT_ZERO,
-    TC_DST_SLOT_TOO_LARGE,
-    TC_DST_SLOT_OCCUPIED,
     NUMBER_OF_TEST_CASES
   } test_case;
 
   // The last function to mock before we expect the unit to return
   typedef enum last_mock_ {
     LM_IS_TYPE_SUPPORTED,
-    LM_MAX_SLOTS_SRC,
+    LM_MAX_SLOTS,
     LM_MAX_UUID,
-    LM_MAX_SLOTS_DST,
     LM_GET_USER_DST,
     LM_MOVE
   } last_mock;
@@ -75,8 +68,7 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
     // Arguments of incoming frame
     u3c_credential_type type = CREDENTIAL_TYPE_EYE_BIOMETRIC;
     uint16_t dst_uuid = 83;
-    uint16_t src_slot = 34;
-    uint16_t dst_slot = 106;
+    uint16_t slot = 34;
 
     // Values to be returned by mocked functions
     last_mock last_mock = LM_MOVE;
@@ -102,21 +94,21 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
         expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_TYPE_INVALID;
         break;
       }
-      case TC_SRC_SLOT_ZERO: {
-        src_slot = 0;
-        last_mock = LM_MAX_SLOTS_SRC;
-        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_SOURCE_CREDENTIAL_SLOT_INVALID;
+      case TC_SLOT_ZERO: {
+        slot = 0;
+        last_mock = LM_MAX_SLOTS;
+        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_SLOT_INVALID;
         break;
       }
-      case TC_SRC_SLOT_TOO_LARGE: {
-        src_slot = 973;
-        last_mock = LM_MAX_SLOTS_SRC;
-        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_SOURCE_CREDENTIAL_SLOT_INVALID;
+      case TC_SLOT_TOO_LARGE: {
+        slot = 973;
+        last_mock = LM_MAX_SLOTS;
+        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_SLOT_INVALID;
         break;
       }
-      case TC_SRC_SLOT_EMPTY: {
+      case TC_SLOT_EMPTY: {
         db_move_res = U3C_DB_OPERATION_RESULT_FAIL_DNE;
-        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_SOURCE_CREDENTIAL_SLOT_EMPTY;
+        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_SLOT_EMPTY;
         break;
       }
       case TC_DST_UUID_ZERO: {
@@ -137,23 +129,6 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
         expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_USER_UNIQUE_IDENTIFIER_NONEXISTENT;
         break;
       }
-      case TC_DST_SLOT_ZERO: {
-        dst_slot = 0;
-        last_mock = LM_MAX_UUID;
-        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_CREDENTIAL_SLOT_INVALID;
-        break;
-      }
-      case TC_DST_SLOT_TOO_LARGE: {
-        dst_slot = 0x173E;
-        last_mock = LM_MAX_UUID;
-        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_CREDENTIAL_SLOT_INVALID;
-        break;
-      }
-      case TC_DST_SLOT_OCCUPIED: {
-        db_move_res = U3C_DB_OPERATION_RESULT_FAIL_OCCUPIED;
-        expected_status = USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_CREDENTIAL_SLOT_OCCUPIED;
-        break;
-      }
       default: {
         break;
       }
@@ -166,18 +141,11 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
       .cmdClass = COMMAND_CLASS_USER_CREDENTIAL,
       .cmd = USER_CREDENTIAL_ASSOCIATION_SET,
       .credentialType = type,
-      .sourceCredentialSlot1 = src_slot >> 8,
-      .sourceCredentialSlot2 = src_slot & 0xFF,
+      .credentialSlot1 = slot >> 8,
+      .credentialSlot2 = slot & 0xFF,
       .destinationUserUniqueIdentifier1 = dst_uuid >> 8,
       .destinationUserUniqueIdentifier2 = dst_uuid & 0xFF,
-      .destinationCredentialSlot1 = dst_slot >> 8,
-      .destinationCredentialSlot2 = dst_slot & 0xFF
     };
-    // u3c_credential_metadata_t source_metadata = {
-    //   .uuid = src_uuid,
-    //   .slot = src_slot,
-    //   .type = type,
-    // };
     input.frame.as_zw_application_tx_buffer.ZW_UserCredentialAssociationSetFrame = incomingFrame;
     input.rxOptions.sourceNode.nodeId = 1;
     input.rxOptions.destNode.nodeId = 2;
@@ -188,12 +156,10 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
       .cmdClass = COMMAND_CLASS_USER_CREDENTIAL,
       .cmd = USER_CREDENTIAL_ASSOCIATION_REPORT,
       .credentialType = type,
-      .sourceCredentialSlot1 = src_slot >> 8,
-      .sourceCredentialSlot2 = src_slot & 0xFF,
+      .credentialSlot1 = slot >> 8,
+      .credentialSlot2 = slot & 0xFF,
       .destinationUserUniqueIdentifier1 = dst_uuid >> 8,
       .destinationUserUniqueIdentifier2 = dst_uuid & 0xFF,
-      .destinationCredentialSlot1 = dst_slot >> 8,
-      .destinationCredentialSlot2 = dst_slot & 0xFF,
       .userCredentialAssociationStatus = expected_status
     };
 
@@ -202,13 +168,13 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
     if (last_mock >= LM_IS_TYPE_SUPPORTED) {
       cc_user_credential_is_credential_type_supported_ExpectAndReturn(type, supports_type);
     }
-    if (last_mock >= LM_MAX_SLOTS_SRC) {
+    if (last_mock >= LM_MAX_SLOTS) {
       cc_user_credential_get_max_credential_slots_ExpectAndReturn(type, max_slots);
     }
     if (last_mock >= LM_MAX_UUID) {
-      cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(max_uuids);
+      cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(max_uuids);
     }
-    if (last_mock >= LM_MAX_SLOTS_DST) {
+    if (last_mock >= LM_MAX_SLOTS) {
       cc_user_credential_get_max_credential_slots_ExpectAndReturn(type, max_slots);
     }
     if (last_mock >= LM_GET_USER_DST) {
@@ -216,19 +182,12 @@ void test_USER_CREDENTIAL_uuid_credential_association_set(void)
       CC_UserCredential_get_user_IgnoreArg_user();
       CC_UserCredential_get_user_IgnoreArg_name();
     }
-    // CC_UserCredential_get_credential_ExpectAndReturn(src_uuid, type, src_slot, NULL, NULL, U3C_DB_OPERATION_RESULT_SUCCESS);
-    // CC_UserCredential_get_credential_ReturnThruPtr_credential_metadata(&source_metadata);
-    // CC_UserCredential_get_credential_IgnoreArg_user_unique_identifier();
-    // CC_UserCredential_get_credential_IgnoreArg_credential_type();
-    // CC_UserCredential_get_credential_IgnoreArg_credential_slot();
-    // CC_UserCredential_get_credential_IgnoreArg_credential_metadata();
-    // CC_UserCredential_get_credential_IgnoreArg_credential_data();
     if (last_mock >= LM_MOVE) {
-      CC_UserCredential_move_credential_ExpectAndReturn(type, src_slot, dst_uuid, dst_slot, db_move_res);
+      CC_UserCredential_move_credential_ExpectAndReturn(type, slot, dst_uuid, slot, db_move_res);
     }
 
     zaf_transport_rx_to_tx_options_Ignore();
-    zaf_transport_tx_ExpectWithArrayAndReturn((uint8_t *)&report, 1, sizeof(report), NULL, NULL, 0, true);
+    zaf_transport_tx_ExpectWithArrayAndReturn((uint8_t *)&report, sizeof(report), sizeof(report), NULL, NULL, 0, true);
     zaf_transport_tx_IgnoreArg_zaf_tx_options();
 
     // Process command

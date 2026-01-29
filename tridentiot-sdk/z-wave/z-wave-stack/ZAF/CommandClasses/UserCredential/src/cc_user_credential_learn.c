@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * @brief Credential Learn module for Command Class User Credential.

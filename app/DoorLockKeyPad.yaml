@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 zw_cc_door_lock:
   configuration:
     operation_type: DOOR_OPERATION_CONST

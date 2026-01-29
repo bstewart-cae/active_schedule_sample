@@ -191,7 +191,7 @@ ZW_WEAK bool validate_new_credential_metadata(
     // CC:0083.01.05.11.015
     && (p_metadata->uuid != 0)
     // CC:0083.01.05.11.014
-    && (p_metadata->uuid <= cc_user_credential_get_max_user_unique_idenfitiers())
+    && (p_metadata->uuid <= cc_user_credential_get_max_user_unique_identifiers())
 
     // CC:0083.01.0A.11.004
     && (p_metadata->slot
@@ -307,4 +307,25 @@ ZW_WEAK bool validate_user_name_encoding(const uint8_t * p_name, uint8_t p_name_
     }
   }
   return true;
+}
+
+ZW_WEAK bool validate_key_locker_slot(const u3c_kl_slot_type_t p_entry_type, const uint16_t p_entry_slot)
+{
+  return p_entry_slot <= cc_user_credential_get_key_locker_slot_count(p_entry_type);
+}
+
+ZW_WEAK bool validate_key_locker_data(
+  const u3c_kl_slot_type_t p_entry_type,
+  __attribute__((unused))const uint16_t p_entry_slot,
+  const uint8_t* const p_entry_data,
+  size_t p_data_len)
+{
+  bool result = true;
+  if (!p_entry_data) {
+    return false;
+  }
+  result &= p_data_len >= cc_user_credential_get_key_locker_min_data_length(p_entry_type) &&
+            p_data_len <= cc_user_credential_get_key_locker_max_data_length(p_entry_type);
+  /* FIXME: Add more checks for additional types as needed */
+  return result;
 }

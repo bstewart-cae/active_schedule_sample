@@ -16,7 +16,7 @@
 /****************************************************************************/
 
 #include "CC_UserCredential.h"
-#include "cc_user_credential_tx.h"
+#include "cc_user_credential_io_types.h"
 
 /****************************************************************************/
 /*                          CONSTANTS and TYPEDEFS                          */

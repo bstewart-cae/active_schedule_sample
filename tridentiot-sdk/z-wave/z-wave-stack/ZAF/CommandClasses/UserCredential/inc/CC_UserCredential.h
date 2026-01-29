@@ -1,3 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ * SPDX-FileCopyrightText: 2025 Z-Wave Alliance <https://z-wavealliance.org/>
+ * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC <https://www.caengineering.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * @brief Handler and API for Command Class User Credential.
@@ -7,7 +16,13 @@
  * doors. This command class employs a user-centric model, allowing multiple
  * Credentials to be associated with one User Unique Identifier.
  *
+ * @note Work for the V2 of the command classes introduces another set of
+ *       operations for managing the Key Locker - this construct is for
+ *       secrets, encryption keys and the like that exist on the device
+ *       that multiple Users or Credentials may share.
+ *
  * @copyright 2023 Silicon Laboratories Inc.
+ * @copyright 2025 Z-Wave Alliance
  */
 
 #ifndef _COMMANDCLASSUSERCREDENTIAL_H_
@@ -48,6 +63,12 @@
 // Number of bytes of a credential set frame if credential data field is empty.
 #define CREDENTIAL_SET_FRAME_LENGTH_WITHOUT_CREDENTIAL_DATA (offsetof(ZW_CREDENTIAL_SET_1BYTE_FRAME, credentialData1))
 
+// Offset (in bytes) of the first variant group of the Key Locker Capabilites Report
+#define KEY_LOCKER_CAP_REPORT_VG_OFFSET (offsetof(ZW_KEY_LOCKER_CAPABILITIES_REPORT_1BYTE_V2_FRAME, variantgroup1))
+// Number of bytes in the variant group of a Key Locker Capabilities Report
+#define KEY_LOCKER_CAP_REPORT_VG_SIZE (sizeof(ZW_KEY_LOCKER_CAPABILITIES_REPORT_1BYTE_V2_FRAME) - \
+                                                KEY_LOCKER_CAP_REPORT_VG_OFFSET)
+
 typedef enum u3c_modifier_type_ {
   MODIFIER_TYPE_DNE = CREDENTIAL_REPORT_DNE,
   MODIFIER_TYPE_UNKNOWN,
@@ -69,6 +90,7 @@ typedef enum u3c_credential_type_ {
   CREDENTIAL_TYPE_FINGER_BIOMETRIC,
   CREDENTIAL_TYPE_HAND_BIOMETRIC,
   CREDENTIAL_TYPE_UNSPECIFIED_BIOMETRIC,
+  CREDENTIAL_TYPE_DESFIRE,
   CREDENTIAL_TYPE_NUMBER_OF_TYPES
 } u3c_credential_type;
 
@@ -102,6 +124,8 @@ typedef enum {
   U3C_UCAR_STATUS_CREDENTIAL_TYPE_INVALID                        = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_TYPE_INVALID,
   U3C_UCAR_STATUS_CREDENTIAL_SLOT_INVALID                        = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_SLOT_INVALID,
   U3C_UCAR_STATUS_CREDENTIAL_SLOT_EMPTY                          = USER_CREDENTIAL_ASSOCIATION_REPORT_CREDENTIAL_SLOT_EMPTY,
+  U3C_UCAR_STATUS_DESTINATION_USER_UNIQUE_IDENTIFIER_INVALID     = USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_USER_UNIQUE_IDENTIFIER_INVALID,
+  U3C_UCAR_STATUS_DESTINATION_USER_UNIQUE_IDENTIFIER_NONEXISTENT = USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_USER_UNIQUE_IDENTIFIER_NONEXISTENT,
 } u3c_user_credential_association_report_status_t;
 
 typedef enum u3c_user_report_type_t_ {
@@ -111,7 +135,7 @@ typedef enum u3c_user_report_type_t_ {
   USER_REP_TYPE_UNCHANGED            = USER_REPORT_UNCHANGED,
   USER_REP_TYPE_RESPONSE_TO_GET      = USER_REPORT_RESPONSE_TO_GET,
   USER_REP_TYPE_ADD_AGAINST_OCCUPIED = USER_REPORT_ADD_AGAINST_OCCUPIED,
-  USER_REP_TYPE_MODIF_AGAINST_EMPTY  = USER_REPORT_MODIFY_AGAINST_EMPTY,
+  USER_REP_TYPE_MODIFY_AGAINST_EMPTY = USER_REPORT_MODIFY_AGAINST_EMPTY,
   USER_REP_TYPE_Z_EXP_MIN_INVALID    = USER_REPORT_ZERO_EXPIRING_MINUTES_INVALID
 } u3c_user_report_type_t;
 
@@ -162,6 +186,14 @@ typedef enum _u3c_admin_code_operation_result_ {
   ADMIN_CODE_OPERATION_RESULT_INTERNAL_INVALID_LENGTH = 0x1F, ///< Internal validation result; Code has an invalid length
   ADMIN_CODE_OPERATION_RESULT_INTERNAL_INVALID_CHAR = 0x2F,   ///< Internal validation result; Code has one or more invalid characters
 } u3c_admin_code_operation_result;
+/**
+ * @brief Defines identifiers for the various Key Locker slot types.
+ */
+typedef enum _u3c_kl_slot_type_ {
+  U3C_KL_SLOT_TYPE_DESFIRE = ///< Key Locker slots to store MiFare DESFire RFID application keys.
+    KEY_LOCKER_ENTRY_SET_DESFIRE_EV2_3_APPLICATION_ID_KEY_V2,
+  U3C_KL_SLOT_TYPE_EOT       ///< End of key locker types. In code this is understood to be equal to n_types + 1 due to 1-indexing.
+} u3c_kl_slot_type_t;
 
 typedef struct u3c_user_t_ {
   uint16_t unique_identifier;
@@ -241,7 +273,9 @@ typedef enum u3c_event_ {
   CC_USER_CREDENTIAL_EVENT_LEARN_STEP_RETRY    = 10, ///< Local Credential read failed, trying to read again
   CC_USER_CREDENTIAL_EVENT_LEARN_TIMEOUT       = 11, ///< Credential Learn step timed out
   CC_USER_CREDENTIAL_EVENT_LEARN_CANCEL_REMOTE = 12, ///< Remote node cancelled Credential Learn process
-  CC_USER_CREDENTIAL_EVENT_LEARN_CANCEL_LOCAL  = 13  ///< Application cancelled Credential Learn process
+  CC_USER_CREDENTIAL_EVENT_LEARN_CANCEL_LOCAL  = 13, ///< Application cancelled Credential Learn process
+  CC_USER_CREDENTIAL_EVENT_IO_READ_COMPLETE    = 14, ///< Time-indeterminate read operation completed by application
+  CC_USER_CREDENTIAL_EVENT_IO_WRITE_COMPLETE   = 15, ///< Time-indeterminate IO write operation completed by application
 } u3c_event_type;
 
 /****************************************************************************/

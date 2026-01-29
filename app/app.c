@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2018 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 /**
  * Z-Wave Certified Application Door Lock Key Pad
  *
@@ -10,7 +16,7 @@
 #include "zw_config_rf.h"
 #include "Assert.h"
 #include "MfgTokens.h"
-//#define DEBUGPRINT
+#define DEBUGPRINT
 #include "DebugPrint.h"
 #include "DebugPrintConfig.h"
 #include "AppTimer.h"
@@ -27,6 +33,7 @@
 #include "board_indicator.h"
 #include "app_hw.h"
 #include "app_credentials.h"
+#include "database_common.h"
 #include "ZAF_ApplicationEvents.h"
 #include "zaf_event_distributor_soc.h"
 #include "zpal_misc.h"
@@ -58,9 +65,9 @@ ZW_APPLICATION_STATUS ApplicationInit(__attribute__((unused)) zpal_reset_reason_
 {
   SRadioConfig_t* RadioConfig;
 
-  DPRINT("Enabling watchdog\n");
-  zpal_watchdog_init();
-  zpal_enable_watchdog(true);
+  // DPRINT("Enabling watchdog\n");
+  // zpal_watchdog_init();
+  // zpal_enable_watchdog(true);
 
 #ifdef DEBUGPRINT
   zpal_debug_init(debug_port_cfg);
@@ -76,31 +83,31 @@ ZW_APPLICATION_STATUS ApplicationInit(__attribute__((unused)) zpal_reset_reason_
   if (isRfRegionValid(regionMfg)) {
     RadioConfig->eRegion = regionMfg;
   } else {
-    ASSERT(isRfRegionValid(RadioConfig->eRegion));
+    ZW_SetMfgTokenDataCountryRegion((void*) &RadioConfig->eRegion);
   }
 
   DPRINTF("Rf region: %d\n", RadioConfig->eRegion);
 
   /*************************************************************************************
-   * CREATE USER TASKS  -  ZW_ApplicationRegisterTask() and ZW_UserTask_CreateTask()
-   *************************************************************************************
-   * Register the main APP task function.
-   *
-   * ATTENTION: This function is the only task that can call ZAF API functions!!!
-   * Failure to follow guidelines will result in undefined behavior.
-   *
-   * Furthermore, this function is the only way to register Event Notification
-   * Bit Numbers for associating to given event handlers.
-   *
-   * ZW_UserTask_CreateTask() can be used to create additional tasks.
-   * @see zwave_soc_sensor_pir example for more info.
-   *************************************************************************************/
+  * CREATE USER TASKS  -  ZW_ApplicationRegisterTask() and ZW_UserTask_CreateTask()
+  *************************************************************************************
+  * Register the main APP task function.
+  *
+  * ATTENTION: This function is the only task that can call ZAF API functions!!!
+  * Failure to follow guidelines will result in undefined behavior.
+  *
+  * Furthermore, this function is the only way to register Event Notification
+  * Bit Numbers for associating to given event handlers.
+  *
+  * ZW_UserTask_CreateTask() can be used to create additional tasks.
+  * @see zwave_soc_sensor_pir example for more info.
+  *************************************************************************************/
   bool bWasTaskCreated = ZW_ApplicationRegisterTask(
-                                                    ApplicationTask,
-                                                    EAPPLICATIONEVENT_ZWRX,
-                                                    EAPPLICATIONEVENT_ZWCOMMANDSTATUS,
-                                                    zaf_get_protocol_config()
-                                                    );
+    ApplicationTask,
+    EAPPLICATIONEVENT_ZWRX,
+    EAPPLICATIONEVENT_ZWCOMMANDSTATUS,
+    zaf_get_protocol_config()
+    );
   ASSERT(bWasTaskCreated);
 
   return(APPLICATION_RUNNING);
@@ -121,7 +128,7 @@ ApplicationTask(SApplicationHandles* pAppHandles)
 #endif
 
   app_hw_init();
-
+  app_nvm_init();
   /* Timer for periodic battery level checking */
   AppTimerRegister(&BatteryCheckTimer, true, ZCB_BatteryCheckTimerCallback);
   TimerStart(&BatteryCheckTimer, PERIODIC_BATTERY_CHECKING_INTERVAL_MINUTES * 60 * 1000);
@@ -132,7 +139,7 @@ ApplicationTask(SApplicationHandles* pAppHandles)
 
   // Wait for and process events
   DPRINT("DoorLockKeyPad Event processor Started\r\n");
-  for(;;) {
+  for (;;) {
     unhandledEvents = zaf_event_distributor_distribute();
     if (0 != unhandledEvents) {
       DPRINTF("Unhandled Events: 0x%08lx\n", unhandledEvents);
@@ -205,8 +212,7 @@ void
 ZCB_BatteryCheckTimerCallback(__attribute__((unused)) SSwTimer *pTimer)
 {
   /* Send a battery level report to the lifeline  */
-  if (false == zaf_event_distributor_enqueue_app_event(EVENT_APP_PERIODIC_BATTERY_CHECK_TRIGGER))
-  {
+  if (false == zaf_event_distributor_enqueue_app_event(EVENT_APP_PERIODIC_BATTERY_CHECK_TRIGGER)) {
     DPRINT("\r\n** Periodic battery checking trigger FAILED\r\n");
   }
 }

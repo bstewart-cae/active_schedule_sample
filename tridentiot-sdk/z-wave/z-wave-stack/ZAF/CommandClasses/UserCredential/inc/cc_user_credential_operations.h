@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * @brief Extended operations for User Credential Command Class.
@@ -111,19 +118,18 @@ u3c_db_operation_result CC_UserCredential_delete_credential_and_report(
   );
 
 /**
- * @brief Tries to assign a credential to a different slot or user
+ * @brief Assigns a credential to a different user
  *
  * @param[in] credential_type Type of the credential
- * @param[in] source_credential_slot Slot of the original credential
+ * @param[in] credential_slot Slot of the credential
  * @param[in] destination_uuid New desired UUID to assign the credential to
- * @param[in] destination_credential_slot New desired slot number for the credential
  * @param[in] p_rx_options Pointer to the details of the received frame
  * @return The result of the operation
  */
 u3c_db_operation_result CC_UserCredential_move_credential_and_report(
   u3c_credential_type credential_type,
-  uint16_t source_credential_slot, uint16_t destination_uuid,
-  uint16_t destination_credential_slot, RECEIVE_OPTIONS_TYPE_EX * p_rx_options
+  uint16_t credential_slot, uint16_t destination_uuid,
+  RECEIVE_OPTIONS_TYPE_EX * p_rx_options
   );
 
 /**

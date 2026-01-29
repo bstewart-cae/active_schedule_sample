@@ -1,6 +1,7 @@
 /**
  * SPDX-License-Identifier: BSD-3-Clause
  * SPDX-FileCopyrightText: 2024 Silicon Laboratories Inc.
+ * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC.
  */
 #include "app_credentials.h"
 #include "CC_UserCredential.h"

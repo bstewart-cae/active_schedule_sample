@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 #include "cc_user_credential_config_api.h"
 #include "cc_user_credential_config.h"
 #include "cc_user_credential_io_config.h"
@@ -63,6 +70,10 @@ STATIC_ASSERT(CC_USER_CREDENTIAL_MIN_DATA_LENGTH_HAND_BIOMETRIC <= CC_USER_CREDE
               STATIC_ASSERT_FAILED_Minimum_length_Hand_Biometric_data_must_be_less_than_maximum_length);
 STATIC_ASSERT(CC_USER_CREDENTIAL_MIN_DATA_LENGTH_UNSPECIFIED_BIOMETRIC <= CC_USER_CREDENTIAL_MAX_DATA_LENGTH_UNSPECIFIED_BIOMETRIC,
               STATIC_ASSERT_FAILED_Minimum_length_Unspecified_Biometric_data_must_be_less_than_maximum_length);
+
+/* Key Locker additions */
+STATIC_ASSERT(CC_USER_CREDENTIAL_KEY_LOCKER_DESFIRE_MIN_LENGTH <= CC_USER_CREDENTIAL_KEY_LOCKER_DESFIRE_MAX_LENGTH,
+              STATIC_ASSERT_FAILED_Minimum_length_DESFire_Application_key_data_length_must_be_less_than_maximum_length);
 
 /****************************************************************************/
 /*                               PRIVATE DATA                               */
@@ -242,7 +253,7 @@ ZW_WEAK bool cc_user_credential_is_user_type_supported(u3c_user_type user_type)
   return false;
 }
 
-ZW_WEAK uint16_t cc_user_credential_get_max_user_unique_idenfitiers(void)
+ZW_WEAK uint16_t cc_user_credential_get_max_user_unique_identifiers(void)
 {
   return CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS;
 }
@@ -334,6 +345,27 @@ ZW_WEAK uint8_t cc_user_credential_get_cl_number_of_steps(u3c_credential_type cr
   return cl_number_of_steps;
 }
 
+ZW_WEAK bool cc_user_credential_is_user_scheduling_supported(void)
+{
+  /* Return true if at least one schedule is supported */
+  return CC_USER_CREDENTIAL_USER_SCHEDULING_SUPPORTED == 1 &&
+         (CC_USER_CREDENTIAL_YEAR_DAY_SCHEDULES_PER_USER +
+          CC_USER_CREDENTIAL_DAILY_REPEATING_SCHEDULES_PER_USER > 0);
+}
+
+ZW_WEAK uint16_t cc_user_credential_get_num_year_day_per_user(void) 
+{
+  return (CC_USER_CREDENTIAL_USER_SCHEDULING_SUPPORTED == 1) ? 
+          CC_USER_CREDENTIAL_YEAR_DAY_SCHEDULES_PER_USER : 0;
+}
+
+ZW_WEAK uint16_t cc_user_credential_get_num_daily_repeating_per_user(void)
+{
+  return (CC_USER_CREDENTIAL_USER_SCHEDULING_SUPPORTED == 1) ? 
+          CC_USER_CREDENTIAL_YEAR_DAY_SCHEDULES_PER_USER : 0;
+}
+
+
 ZW_WEAK bool cc_user_credential_is_all_users_checksum_supported(void)
 {
   return CC_USER_CREDENTIAL_ALL_USERS_CHECKSUM_SUPPORTED;
@@ -359,4 +391,46 @@ ZW_WEAK bool cc_user_credential_get_admin_code_deactivate_supported(void)
 {
   return (CC_USER_CREDENTIAL_ADMIN_CODE_DEACTIVATE_SUPPORTED == 1)
          && (CC_USER_CREDENTIAL_MAX_CREDENTIAL_SLOTS_PIN_CODE > 0);
+}
+
+ZW_WEAK uint16_t cc_user_credential_get_key_locker_slot_count(const u3c_kl_slot_type_t slot_type)
+{
+  uint16_t retval = 0;
+  switch(slot_type)
+  {
+    case U3C_KL_SLOT_TYPE_DESFIRE:
+      retval = CC_USER_CREDENTIAL_KEY_LOCKER_DESFIRE_SLOT_COUNT;
+      break;
+    default:
+      break;
+  }
+  return retval;
+}
+
+ZW_WEAK uint16_t cc_user_credential_get_key_locker_min_data_length(const u3c_kl_slot_type_t slot_type)
+{
+  uint16_t retval = 0;
+  switch(slot_type)
+  {
+    case U3C_KL_SLOT_TYPE_DESFIRE:
+      retval = CC_USER_CREDENTIAL_KEY_LOCKER_DESFIRE_MIN_LENGTH;
+      break;
+    default:
+      break;
+  }
+  return retval;
+}
+
+ZW_WEAK uint16_t cc_user_credential_get_key_locker_max_data_length(const u3c_kl_slot_type_t slot_type)
+{
+  uint16_t retval = 0;
+  switch(slot_type)
+  {
+    case U3C_KL_SLOT_TYPE_DESFIRE:
+      retval = CC_USER_CREDENTIAL_KEY_LOCKER_DESFIRE_MAX_LENGTH;
+      break;
+    default:
+      break;
+  }
+  return retval;
 }

@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2024 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * Non-volatile memory implementation for Command Class User Credential I/O
@@ -87,7 +94,56 @@ typedef enum u3c_nvm_area_ {
   AREA_CREDENTIAL_METADATA,
   AREA_CREDENTIAL_DATA,
   AREA_ADMIN_PIN_CODE_DATA,
-  AREA_SCHEDULE_DATA,
 } u3c_nvm_area;
+
+/*
+ * Some database manipulation functions need to have exposure to multiple modules
+ * depending on what particular features of the U3C are supported by the end device. 
+ */
+/****************************************************************************/
+/*                               API FUNCTIONS                              */
+/****************************************************************************/
+
+/**
+ * @brief  Execute an NVM read or write operation for application device.
+ *
+ * @return true if the operation has been executed successfully and more than 0
+ *         bytes were transferred
+ */
+bool u3c_nvm(
+  const u3c_nvm_operation operation, const u3c_nvm_area area, uint16_t offset, void* pData,
+  uint16_t size);
+
+/**
+ * @brief  Get the file ID offset of a given User Unique ID.
+ *
+ * @param      uuid User Unique ID to find
+ * @param[out] offset Page offset of the given user in the database region
+ * @return     true if the user ID exists in the database.
+ */
+bool u3c_nvm_get_user_offset_from_id(const uint16_t uuid, uint16_t * offset);
+
+/** 
+ * @brief Get current number of user entries in the database
+ * 
+ * @return Number of existing User entries in the database
+ */
+uint16_t u3c_nvm_get_num_users(void);
+
+/** 
+ * @brief Get current number of credential entries in the database
+ * 
+ * @return Number of existing credential entries in the database
+ */
+uint16_t u3c_nvm_get_num_creds(void);
+
+/**
+ * @brief Get the maximum number of users allowed in the database
+ * 
+ * @return Maximum number of User Slots allowed in the database
+ */
+uint16_t u3c_nvm_get_max_users(void);
+
+/* To add: Key Locker, Time, User Code, Migration, etc. */
 
 #endif /* CC_USER_CREDENTIAL_NVM */

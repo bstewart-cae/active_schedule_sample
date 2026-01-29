@@ -79,19 +79,6 @@
  * Admin PIN Code data
  */
 #define ZAF_FILE_ID_ADMIN_PIN_CODE (1996)
-/**
- * U3CV2 Changes: Key Locker
- */
-#define ZAF_FILE_ID_CC_USER_CREDENTIAL_KEY_LOCKER_BASE (1997)
-#define ZAF_FILE_ID_CC_USER_CREDENTIAL_KEY_LOCKER_LAST (2252)
-/**
- * U3CV2 Changes: Active Schedule integration data storage
- * 
- * Because this is the same layout as the users, this will 
- * follow the same mapping as is found in the descriptor table.
- */
-#define ZAF_FILE_ID_CC_USER_CREDENTIAL_SCHEDULE_BASE (2253)
-#define ZAF_FILE_ID_CC_USER_CREDENTIAL_SCHEDULE_LAST (2508)
 
 #define ZAF_FILE_SIZE_APP_VERSION  (sizeof(uint32_t))
 

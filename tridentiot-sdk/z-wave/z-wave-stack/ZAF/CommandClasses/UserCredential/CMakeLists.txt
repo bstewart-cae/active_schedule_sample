@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # The object library will be compiled once for all applications.
 # This library must contain files that are generic for all applications.
 zw_add_object_cc(NAME CC_UserCredential

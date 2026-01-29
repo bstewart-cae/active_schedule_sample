@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * User Credential Command Class I/O abstraction.
@@ -8,7 +15,7 @@
 #ifndef CC_USER_CREDENTIAL_IO_H
 #define CC_USER_CREDENTIAL_IO_H
 
-#include "CC_UserCredential.h"
+#include "cc_user_credential_io_types.h"
 
 /**
  * @addtogroup CC
@@ -20,18 +27,6 @@
 /****************************************************************************/
 /*                      EXPORTED TYPES and DEFINITIONS                      */
 /****************************************************************************/
-
-typedef enum u3c_db_operation_result_ {
-  U3C_DB_OPERATION_RESULT_SUCCESS,         ///< The operation completed succesfully
-  U3C_DB_OPERATION_RESULT_ERROR,           ///< An error occurred
-  U3C_DB_OPERATION_RESULT_ERROR_IO,        ///< An I/O error occurred
-  U3C_DB_OPERATION_RESULT_ERROR_DUPLICATE, ///< Duplicate Entry in table
-  U3C_DB_OPERATION_RESULT_FAIL_DNE,        ///< The object does not exist
-  U3C_DB_OPERATION_RESULT_FAIL_FULL,       ///< There is no space left for the object
-  U3C_DB_OPERATION_RESULT_FAIL_OCCUPIED,   ///< The object already exists
-  U3C_DB_OPERATION_RESULT_FAIL_REASSIGN,   ///< The credential is assigned to a different user
-  U3C_DB_OPERATION_RESULT_FAIL_IDENTICAL   ///< The new data is identical to the data already stored locally
-} u3c_db_operation_result;
 
 /****************************************************************************/
 /*                           GENERAL API FUNCTIONS                          */
@@ -222,6 +217,40 @@ u3c_db_operation_result CC_UserCredential_get_admin_code_info(u3c_admin_code_met
  * @return U3C_OPERATION_ERROR otherwise
  */
 u3c_db_operation_result CC_UserCredential_set_admin_code(u3c_admin_code_metadata_t *code);
+
+
+/****************************************************************************/
+/*                      KEY LOCKER RELATED API FUNCTIONS                    */
+/****************************************************************************/
+
+/**
+ * Called to run a Key Locker Entry Get when the input frame has been parsed
+ * and validated
+ *
+ * @param[in] inputs pointer to struct containing inputs
+ * @param[out] outputs pointer to struct containing outputs
+ *
+ * @returns
+ */
+u3c_io_operation_status_t CC_UserCredential_get_key_locker_entry(
+  u3c_kl_get_input_t* inputs,
+  u3c_kl_get_output_t* outputs
+);
+
+/**
+ * Called to run a Key Locker Entry Set when the input frame has been parsed
+ * and validated
+ *
+ * @param[in] inputs pointer to struct containing inputs
+ * @param[out] outputs pointer to struct containing outputs
+ *
+ * @returns
+ */
+u3c_io_operation_status_t CC_UserCredential_set_key_locker_entry(
+  u3c_kl_set_input_t* inputs,
+  u3c_kl_set_output_t* outputs
+);
+
 
 /**
  * @}

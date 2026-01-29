@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include "uuid_credential_association_report.h"
 #include <initializer_list>
 #include "test_CC_UserCredential.hpp"
 extern "C" {
@@ -91,7 +92,7 @@ credential_type_test_vector_t;
  */
 void test_CREDENTIAL_SET_invalid_credential_type(void)
 {
-  cc_user_credential_get_max_user_unique_idenfitiers_IgnoreAndReturn(20);
+  cc_user_credential_get_max_user_unique_identifiers_IgnoreAndReturn(20);
   cc_user_credential_get_min_length_of_data_IgnoreAndReturn(0);
   cc_user_credential_get_max_length_of_data_IgnoreAndReturn(10);
   cc_user_credential_get_max_credential_slots_IgnoreAndReturn(99);
@@ -378,15 +379,14 @@ void test_CREDENTIAL_GET_REPORT(void)
     (uint8_t)CREDENTIAL_SLOT,
     0x80,     // CRB
     4,     // Length
-    1,
-    2,
     3,
+    4,
+    9,
     4,
     (uint8_t)MODIFIER_TYPE_Z_WAVE,
     0,     // MSB
     1,     // LSB
-    1,     // Next credential type must be 1 for now as the XML doesn't contain 0 making
-           // the x86 test system unable to parse the frame if set to zero.
+    0,     // Next credential type
     0,
     0,
   };
@@ -417,7 +417,7 @@ void test_CREDENTIAL_GET_REPORT(void)
   cc_user_credential_get_max_hash_length_ExpectAndReturn((u3c_credential_type)CREDENTIAL_TYPE, 0);
   zaf_transport_rx_to_tx_options_Expect(&rxo, NULL);
   zaf_transport_rx_to_tx_options_IgnoreArg_tx_options();
-  zaf_transport_tx_ExpectWithArrayAndReturn(EXPECTED_REPORT, 1, sizeof(EXPECTED_REPORT), NULL, NULL, 0, true);
+  zaf_transport_tx_ExpectWithArrayAndReturn(EXPECTED_REPORT, sizeof(EXPECTED_REPORT), sizeof(EXPECTED_REPORT), NULL, NULL, 0, true);
   zaf_transport_tx_IgnoreArg_zaf_tx_options();
 
   received_frame_status_t status;
@@ -470,17 +470,15 @@ void test_USER_CREDENTIAL_ASSOCIATION_SET(void)
     1,     // Source Slot (LSB)
     INVALID_DESTINATION_UUID >> 8,     // Destination UUID (MSB)
     INVALID_DESTINATION_UUID & 0xFF,     // Destination UUID (LSB)
-    0,     // Destination Slot (MSB)
-    1,     // Destination Slot (LSB)
-    0x01     // Status: Source User Unique Identifier Invalid
+    USER_CREDENTIAL_ASSOCIATION_REPORT_DESTINATION_USER_UNIQUE_IDENTIFIER_INVALID
   };
 
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS);
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS);
   cc_user_credential_get_max_credential_slots_ExpectAndReturn(CREDENTIAL_TYPE_PIN_CODE, CC_USER_CREDENTIAL_MAX_CREDENTIAL_SLOTS_PIN_CODE);
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS);
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS);
   zaf_transport_rx_to_tx_options_Expect(&rxo, NULL);
   zaf_transport_rx_to_tx_options_IgnoreArg_tx_options();
-  zaf_transport_tx_ExpectWithArrayAndReturn(EXPECTED_REPORT2, 1, sizeof(EXPECTED_REPORT2), NULL, NULL, 0, true);
+  zaf_transport_tx_ExpectWithArrayAndReturn(EXPECTED_REPORT2, sizeof(EXPECTED_REPORT2), sizeof(EXPECTED_REPORT2), NULL, NULL, 0, true);
   zaf_transport_tx_IgnoreArg_zaf_tx_options();
 
   status = invoke_cc_handler(&input2, &output);   // Don't expect anything written to output.
