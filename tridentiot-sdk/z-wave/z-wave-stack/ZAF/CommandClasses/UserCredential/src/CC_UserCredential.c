@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * @brief Handler for Command Class User Credential.
@@ -195,7 +202,7 @@ static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_ha
 
   u3c_db_operation_result operation_result =
     CC_UserCredential_move_credential_and_report(source_metadata->type,
-                                                 source_metadata->slot, destination_metadata->uuid, destination_metadata->slot, p_rx_options);
+                                                 source_metadata->slot, destination_metadata->uuid, p_rx_options);
 
   return operation_result == U3C_DB_OPERATION_RESULT_SUCCESS
          ?RECEIVED_FRAME_STATUS_SUCCESS : RECEIVED_FRAME_STATUS_FAIL;
@@ -204,19 +211,20 @@ static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_ha
 static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_parser(
   cc_handler_input_t const * const input)
 {
-  uint16_t source_slot = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.credentialSlot1 << 8)
-                         | input->frame->ZW_UserCredentialAssociationSetFrame.credentialSlot2;
+  uint16_t slot = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.credentialSlot1 << 8)
+                  | input->frame->ZW_UserCredentialAssociationSetFrame.credentialSlot2;
 
   uint16_t destination_uuid = (uint16_t)(input->frame->ZW_UserCredentialAssociationSetFrame.destinationUserUniqueIdentifier1 << 8)
                               | input->frame->ZW_UserCredentialAssociationSetFrame.destinationUserUniqueIdentifier2;
 
   u3c_credential_metadata_t source_metadata = { 0 };
   source_metadata.type = input->frame->ZW_UserCredentialAssociationSetFrame.credentialType;
-  source_metadata.slot = source_slot;
+  source_metadata.slot = slot;
 
   u3c_credential_metadata_t destination_metadata = { 0 };
   destination_metadata.uuid = destination_uuid;
   destination_metadata.type = source_metadata.type;
+  destination_metadata.slot = slot;
 
   bool parsing_success = false;
   u3c_user_credential_association_report_status_t status = U3C_UCAR_STATUS_SUCCESS;
@@ -228,8 +236,12 @@ static received_frame_status_t CC_UserCredential_UserCredentialAssociationSet_pa
     status = U3C_UCAR_STATUS_CREDENTIAL_TYPE_INVALID;
   }
   // Source Credential Slot must be in supported range
-  else if (source_slot == 0 || source_slot > cc_user_credential_get_max_credential_slots(source_metadata.type)) {
+  else if (slot == 0 || slot > cc_user_credential_get_max_credential_slots(source_metadata.type)) {
     status = U3C_UCAR_STATUS_CREDENTIAL_SLOT_INVALID;
+  }
+  // Destination User Unique Identifier must be in supported range
+  else if (0 == destination_uuid || destination_uuid > cc_user_credential_get_max_user_unique_identifiers()) {
+    status = U3C_UCAR_STATUS_DESTINATION_USER_UNIQUE_IDENTIFIER_INVALID;
   } else {
     parsing_success = true;
   }
@@ -304,6 +316,103 @@ static received_frame_status_t CC_UserCredential_AdminCodeSet_parser(cc_handler_
   return CC_UserCredential_AdminCodeSet_handler(&data, input->rx_options);
 }
 
+/**
+ * @brief Processor for Key Locker Capabilities Get command.
+ *
+ * CC:0083.02.1E.11.002
+ *
+ * Even if Key Locker functionality is not supported on the end node,
+ * a report MUST be returned to the sending controller with 0 supported
+ * entry types. However, gets and sets can be (and are) ignored in this case.
+ */
+static received_frame_status_t CC_UserCredentialV2_KeyLockerCapabilitiesGet_handler(
+  __attribute__((unused))cc_handler_input_t * input,
+  cc_handler_output_t * output)
+{
+  ZW_KEY_LOCKER_CAPABILITIES_REPORT_1BYTE_V2_FRAME * out_frame =
+    &output->frame->ZW_KeyLockerCapabilitiesReport1byteV2Frame;
+
+  out_frame->cmdClass = COMMAND_CLASS_USER_CREDENTIAL_V2;
+  out_frame->cmd = KEY_LOCKER_CAPABILITIES_REPORT_V2;
+
+  uint8_t* ptr = &out_frame->variantgroup1.supportedEntryType;
+
+  uint8_t numTypes = 0;
+  uint16_t slotCount, maxSize, minSize;
+  /* Slot types are 1-indexed, iterate with care */
+  for (int i = 1; i < U3C_KL_SLOT_TYPE_EOT; i++) {
+    if (0 < (slotCount = cc_user_credential_get_key_locker_slot_count(i))) {
+      numTypes++;
+      maxSize = cc_user_credential_get_key_locker_max_data_length(i);
+      minSize = cc_user_credential_get_key_locker_min_data_length(i);
+      *ptr++ = i;                                   // Supported Entry Type
+      *ptr++ = (uint8_t)((slotCount >> 8) & 0xFF);  // Number Of Entry Slots (MSB)
+      *ptr++ = (uint8_t)((slotCount) & 0xFF);       // Number Of Entry Slots (LSB)
+      *ptr++ = (uint8_t)((minSize >> 8) & 0xFF);    // Slot Minimum Data Length (MSB)
+      *ptr++ = (uint8_t)((minSize) & 0xFF);         // Slot Minimum Data Length (LSB)
+      *ptr++ = (uint8_t)((maxSize >> 8) & 0xFF);    // Slot Maximum Data Length (MSB)
+      *ptr++ = (uint8_t)((maxSize) & 0xFF);         // Slot Maximum Data Length (LSB)
+    }
+  }
+  out_frame->numberOfSupportedEntryTypes = numTypes;
+  output->length = KEY_LOCKER_CAP_REPORT_VG_OFFSET + (KEY_LOCKER_CAP_REPORT_VG_SIZE * numTypes);
+  return RECEIVED_FRAME_STATUS_SUCCESS;
+}
+
+static received_frame_status_t CC_UserCredentialV2_KeyLockerEntryGet_parser(cc_handler_input_t * input, cc_handler_output_t * output)
+{
+  ZW_KEY_LOCKER_ENTRY_GET_V2_FRAME *in_frame =
+    &input->frame->ZW_KeyLockerEntryGetV2Frame;
+  const uint16_t slot = (in_frame->entrySlot1 << 8) | (in_frame->entrySlot2);
+  /* Validate that the given Key Locker type and slot is supported */
+  if (slot == 0 || // CC:0083.02.20.11.003
+      !validate_key_locker_slot(in_frame->entryType, slot)) {
+    return RECEIVED_FRAME_STATUS_FAIL;
+  }
+  /* Once validated, run operation */
+  u3c_kl_get_input_t handler_inputs = {
+    .rx_opts = input->rx_options,
+    .slot = slot,
+    .slot_type = in_frame->entryType
+  };
+  return CC_UserCredential_KeyLockerEntryGet_handler(&handler_inputs, output);
+}
+
+static received_frame_status_t CC_UserCredentialV2_KeyLockerEntrySet_parser(cc_handler_input_t * input, cc_handler_output_t * output)
+{
+  ZW_KEY_LOCKER_ENTRY_SET_1BYTE_V2_FRAME *in_frame =
+    &input->frame->ZW_KeyLockerEntrySet1byteV2Frame;
+
+  /* Extract useful values */
+  u3c_operation_type_t operation =
+    (u3c_operation_type_t)(in_frame->properties1 & KEY_LOCKER_ENTRY_SET_PROPERTIES1_OPERATION_TYPE_MASK_V2);
+  uint16_t slot = (uint16_t)((in_frame->entrySlot1 << 8) | (in_frame->entrySlot2));
+  uint16_t length = (uint16_t)((in_frame->entryDataLength1 << 8) | (in_frame->entryDataLength2));
+  /* Validate that the given Key Locker type and slot is supported */
+  if (!validate_key_locker_slot(in_frame->entryType, slot)) {
+    return RECEIVED_FRAME_STATUS_FAIL;
+  }
+  /* Run a check and break if data is invalid  */
+  if (operation != U3C_OPERATION_TYPE_DELETE
+      && !validate_key_locker_data(
+        in_frame->entryType,
+        slot,
+        &in_frame->entryData1,
+        length
+  )) {
+    return RECEIVED_FRAME_STATUS_FAIL;
+  }
+  /* Otherwise, run the handler and return the result of that operation */
+  u3c_kl_set_input_t handler_inputs = {
+    .rx_opts = input->rx_options,
+    .slot = slot,
+    .slot_type = in_frame->entryType,
+    .length = length,
+    .data = &in_frame->entryData1
+  };
+  return CC_UserCredential_KeyLockerEntrySet_handler(&handler_inputs, output);
+}
+
 static received_frame_status_t CC_UserCredential_handler(
   cc_handler_input_t * input,
   cc_handler_output_t * output)
@@ -367,6 +476,18 @@ static received_frame_status_t CC_UserCredential_handler(
 
     case ADMIN_PIN_CODE_SET:
       status = CC_UserCredential_AdminCodeSet_parser(input);
+      break;
+
+    case KEY_LOCKER_CAPABILITIES_GET_V2:
+      status = CC_UserCredentialV2_KeyLockerCapabilitiesGet_handler(input, output);
+      break;
+
+    case KEY_LOCKER_ENTRY_GET_V2:
+      status = CC_UserCredentialV2_KeyLockerEntryGet_parser(input, output);
+      break;
+
+    case KEY_LOCKER_ENTRY_SET_V2:
+      status = CC_UserCredentialV2_KeyLockerEntrySet_parser(input, output);
       break;
 
     default:

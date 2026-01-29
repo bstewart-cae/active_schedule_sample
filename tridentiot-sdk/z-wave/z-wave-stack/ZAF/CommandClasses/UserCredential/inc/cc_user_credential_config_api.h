@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2024 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * User Credential Command Class configuration API.
@@ -23,7 +30,7 @@ bool cc_user_credential_is_user_type_supported(u3c_user_type user_type);
  *
  * @return The maximum number of supported UUIDs
  */
-uint16_t cc_user_credential_get_max_user_unique_idenfitiers(void);
+uint16_t cc_user_credential_get_max_user_unique_identifiers(void);
 
 /**
  * Gets the configured maximum user name length.
@@ -118,6 +125,13 @@ uint8_t cc_user_credential_get_cl_recommended_timeout(u3c_credential_type creden
 uint8_t cc_user_credential_get_cl_number_of_steps(u3c_credential_type credential_type);
 
 /**
+ * Returns whether User Scheduling is supported via Active Schedule CC.
+ *
+ * @return true if scheduling is supported, false otherwise.
+ */
+bool cc_user_credential_is_user_scheduling_supported(void);
+
+/**
  * Returns whether All Users Checksum is supported.
  *
  * @return true if All Users Checksum is supported, false otherwise.
@@ -151,5 +165,46 @@ bool cc_user_credential_get_admin_code_supported(void);
  * @return true if Admin Code Deactivate is supported
  */
 bool cc_user_credential_get_admin_code_deactivate_supported(void);
+
+/**
+ * @brief Retrieves the number of Year Day schedules each user supports.
+ * This value is the same for all users.
+ *
+ * @return Number of Year Day schedules per User slot
+ */
+uint16_t cc_user_credential_get_num_year_day_per_user(void);
+
+/**
+ * @brief Retrieves the number of Daily Repeating schedules each user supports.
+ * This value is the same for all users.
+ *
+ * @return Number of Daily Repeating schedules per User slot
+ */
+uint16_t cc_user_credential_get_num_daily_repeating_per_user(void);
+
+/**
+ * @brief  Returns the configured number of key locker slots for a given slot type
+ *
+ * @return Returns number of slots for the slot type,
+ *         0 if the slot type or Key Locker functionality are not supported.
+ */
+uint16_t cc_user_credential_get_key_locker_slot_count(const u3c_kl_slot_type_t slot_type);
+
+/**
+ * @brief  Returns the maximum allowed data length for a given slot type
+ *
+ * @return Returns maximum allowed data length for the slot type,
+ *         0 if the slot type or Key Locker functionality are not supported.
+ */
+uint16_t cc_user_credential_get_key_locker_min_data_length(const u3c_kl_slot_type_t slot_type);
+
+/**
+ * @brief  Returns the minimum allowed data length for a given slot type
+ *
+ * @return Returns minimum allowed data length for the slot type,
+ *         0 if the slot type or Key Locker functionality are not supported.
+ */
+uint16_t cc_user_credential_get_key_locker_max_data_length(const u3c_kl_slot_type_t slot_type);
+
 
 #endif /* CC_USER_CREDENTIAL_CONFIG_API_H */

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 /**
  * Z-Wave Certified Application Door Lock Key Pad Command Classes Events
  * Handlers

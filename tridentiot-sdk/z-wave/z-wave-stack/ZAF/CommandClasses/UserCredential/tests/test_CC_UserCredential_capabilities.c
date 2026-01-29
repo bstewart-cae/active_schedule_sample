@@ -54,13 +54,13 @@ void test_USER_CREDENTIAL_user_capabilities_report(void)
       // #TODO: Change when User Schedule is implemented
       .properties1 = 0x60,
       .supportedUserTypesBitMaskLength = 2,
-      .variantgroup1.supportedUserTypesBitMask = 0x29,
-      .variantgroup2.supportedUserTypesBitMask = 0x02
+      .supportedUserTypesBitMask1 = 0x29,
+      .supportedUserTypesBitMask2 = 0x02
     }
   };
 
   // Set up mock calls
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(0xFAF9);
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(0xFAF9);
   cc_user_credential_get_max_length_of_user_name_ExpectAndReturn(188);
   cc_user_credential_is_user_type_supported_ExpectAndReturn(USER_TYPE_GENERAL, true);
   cc_user_credential_is_user_type_supported_ExpectAndReturn(USER_TYPE_PROGRAMMING, true);
@@ -72,6 +72,7 @@ void test_USER_CREDENTIAL_user_capabilities_report(void)
   cc_user_credential_is_credential_rule_supported_ExpectAndReturn(CREDENTIAL_RULE_SINGLE, true);
   cc_user_credential_is_credential_rule_supported_ExpectAndReturn(CREDENTIAL_RULE_DUAL, false);
   cc_user_credential_is_credential_rule_supported_ExpectAndReturn(CREDENTIAL_RULE_TRIPLE, true);
+  cc_user_credential_is_user_scheduling_supported_ExpectAndReturn(false);
   cc_user_credential_is_all_users_checksum_supported_ExpectAndReturn(true);
   cc_user_credential_is_user_checksum_supported_ExpectAndReturn(true);
 

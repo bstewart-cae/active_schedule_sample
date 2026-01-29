@@ -54,3 +54,36 @@ bool CC_UserCredential_CredentialGet_handler(
   u3c_credential_metadata_t * p_metadata,
   u3c_credential_report_tx_callback_t callback
   );
+
+/**
+ * Called to run a Key Locker Entry Get when the input frame has been parsed
+ * and validated.
+ *
+ * Depending on the result of the particular IO operation, the output may be
+ * automatically populated with the report frame.
+ *
+ * @param[in] input Pointer to struct containing parsed and validated inputs
+ * @param[out] output Pointer to struct containing outputs. Intended to be the
+ *                    synchronous output frame.
+ *
+ * @returns Frame status
+ */
+received_frame_status_t CC_UserCredential_KeyLockerEntryGet_handler(
+  u3c_kl_get_input_t* input,
+  cc_handler_output_t* output
+);
+
+/**
+ * Called to run a Key Locker Entry Set when the input frame has been parsed
+ * and validated
+ *
+ * @param[in] input Pointer to struct containing parsed and validated inputs
+ * @param[out] output Pointer to struct containing outputs. Intended to be the
+ *                    synchronous output frame.
+ *
+ * @returns Frame status
+ */
+received_frame_status_t CC_UserCredential_KeyLockerEntrySet_handler(
+  u3c_kl_set_input_t* input,
+  cc_handler_output_t* output
+);

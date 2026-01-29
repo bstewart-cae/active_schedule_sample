@@ -1,7 +1,9 @@
-/**
+/*
  * SPDX-License-Identifier: BSD-3-Clause
- * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC.
- *
+ * SPDX-FileCopyrightText: 2025 Z-Wave Alliance <https://z-wavealliance.org>
+ * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC. <https://www.caengineering.com>
+ */
+/**
  * @file cc_active_schedule_io.h
  * Function and data definitions for the Active Schedule CC handler code.
  *

@@ -45,7 +45,7 @@ ZW_WEAK received_frame_status_t CC_UserCredential_UserSet_handler(
   bool is_name_truncated = false;
 
   // CC:0083.01.05.11.014: Ignore frames where the User Unique Identifier is greater than allowed
-  if (user.unique_identifier > cc_user_credential_get_max_user_unique_idenfitiers()) {
+  if (user.unique_identifier > cc_user_credential_get_max_user_unique_identifiers()) {
     return RECEIVED_FRAME_STATUS_FAIL;
   }
 
@@ -356,4 +356,56 @@ ZW_WEAK bool CC_UserCredential_CredentialGet_handler(
     next_credential_slot, input->rx_options);
 
   return credential_found;
+}
+
+ZW_WEAK received_frame_status_t CC_UserCredential_KeyLockerEntryGet_handler(
+  u3c_kl_get_input_t* input,
+  cc_handler_output_t* output
+)
+{
+  u3c_kl_get_output_t handler_outputs = { 0 };
+  u3c_io_operation_status_t out_status =
+    CC_UserCredential_get_key_locker_entry(input, &handler_outputs);
+  /* Handle outgoing Supervision status and report (if applicable) */
+  switch(out_status.result) {
+    case U3C_DB_OPERATION_RESULT_SUCCESS: {
+      ZW_KEY_LOCKER_ENTRY_REPORT_V2_FRAME *out_frame =
+        &output->frame->ZW_KeyLockerEntryReportV2Frame;
+      /* Pack output frame */
+      out_frame->cmdClass = COMMAND_CLASS_USER_CREDENTIAL_V2;
+      out_frame->cmd = KEY_LOCKER_ENTRY_REPORT_V2;
+      out_frame->properties1 = 0x00;
+      out_frame->properties1 |= (handler_outputs.occupied ? KEY_LOCKER_ENTRY_SET_DESFIRE_EV2_3_APPLICATION_ID_KEY_V2 : 0x00);
+      /* Add more properties as needed */
+      out_frame->entryType = handler_outputs.slot_type;
+      out_frame->entrySlot1 = (uint8_t)((handler_outputs.slot >> 8) & 0xFF);
+      out_frame->entrySlot2 = (uint8_t)((handler_outputs.slot) & 0xFF);
+      output->length = sizeof(ZW_KEY_LOCKER_ENTRY_REPORT_V2_FRAME);
+      return RECEIVED_FRAME_STATUS_SUCCESS;
+    }
+    case U3C_DB_OPERATION_RESULT_WORKING:
+      output->duration = out_status.working_time;
+      return RECEIVED_FRAME_STATUS_WORKING;
+    default:
+      return RECEIVED_FRAME_STATUS_FAIL;
+  }
+}
+
+ZW_WEAK received_frame_status_t CC_UserCredential_KeyLockerEntrySet_handler(
+  u3c_kl_set_input_t* input,
+  cc_handler_output_t* output
+)
+{
+  u3c_kl_set_output_t handler_outputs = { 0 };
+  u3c_io_operation_status_t out_status =
+    CC_UserCredential_set_key_locker_entry(input, &handler_outputs);
+  switch(out_status.result) {
+    case U3C_DB_OPERATION_RESULT_SUCCESS:
+      return RECEIVED_FRAME_STATUS_SUCCESS;
+    case U3C_DB_OPERATION_RESULT_WORKING:
+      output->duration = out_status.working_time;
+      return RECEIVED_FRAME_STATUS_WORKING;
+    default:
+      return RECEIVED_FRAME_STATUS_FAIL;
+  }
 }

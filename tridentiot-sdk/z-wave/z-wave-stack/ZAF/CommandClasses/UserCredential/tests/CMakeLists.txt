@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 ################################################################################
 # Common variables for User Credential command class tests.
 ################################################################################
@@ -114,6 +118,21 @@ add_unity_test(NAME test_CC_UserCredential_credential_move
                USE_UNITY_WITH_CMOCK
 )
 target_include_directories(test_CC_UserCredential_credential_move
+  PRIVATE
+    ../config
+)
+
+set(test_CC_UserCredential_key_locker_src
+  test_CC_UserCredential_key_locker.c
+  ${test_u3c_common_sources}
+)
+add_unity_test(NAME test_CC_UserCredential_key_locker
+               FILES ${test_CC_UserCredential_key_locker_src}
+               LIBRARIES ${test_u3c_common_libraries}
+                         cc_user_credential_io_cmock
+               USE_UNITY_WITH_CMOCK
+)
+target_include_directories(test_CC_UserCredential_key_locker
   PRIVATE
     ../config
 )

@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * @brief Weak implementation for Command Class User Credential I/O
@@ -123,4 +130,26 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_set_admin_code(
   __attribute__((unused)) u3c_admin_code_metadata_t *code)
 {
   return U3C_DB_OPERATION_RESULT_ERROR;
+}
+
+ZW_WEAK u3c_io_operation_status_t CC_UserCredential_get_key_locker_entry(
+  __attribute__((unused)) u3c_kl_get_input_t* inputs,
+  __attribute__((unused)) u3c_kl_get_output_t* outputs
+)
+{
+  return (u3c_io_operation_status_t){
+    .result = U3C_DB_OPERATION_RESULT_ERROR,
+    .working_time = 0x00
+  };
+}
+
+ZW_WEAK u3c_io_operation_status_t CC_UserCredential_set_key_locker_entry(
+  __attribute__((unused)) u3c_kl_set_input_t* inputs,
+  __attribute__((unused)) u3c_kl_set_output_t* outputs
+)
+{
+  return (u3c_io_operation_status_t){
+    .result = U3C_DB_OPERATION_RESULT_ERROR,
+    .working_time = 0x00
+  };
 }

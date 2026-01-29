@@ -93,7 +93,7 @@ void test_USER_CREDENTIAL_credential_learn_cancel(void)
   // Set up mock calls
   cc_user_credential_get_max_credential_slots_IgnoreAndReturn(999);
   cc_user_credential_is_credential_type_supported_IgnoreAndReturn(true);
-  cc_user_credential_get_max_user_unique_idenfitiers_IgnoreAndReturn(999);
+  cc_user_credential_get_max_user_unique_identifiers_IgnoreAndReturn(999);
   cc_user_credential_get_max_credential_slots_IgnoreAndReturn(999);
   cc_user_credential_is_credential_learn_supported_IgnoreAndReturn(true);
   CC_UserCredential_get_user_IgnoreAndReturn(U3C_DB_OPERATION_RESULT_SUCCESS);
@@ -329,7 +329,7 @@ void test_USER_CREDENTIAL_credential_learn_start(void)
       && (tc != TC_ALREADY_IN_PROGRESS)
       ) {
       cc_user_credential_get_max_credential_slots_ExpectAndReturn(type, max_slots); cc_user_credential_is_credential_type_supported_ExpectAndReturn(type, supports_type);
-      cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(max_uuids);
+      cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(max_uuids);
       cc_user_credential_get_max_credential_slots_ExpectAndReturn(type, max_slots);
       cc_user_credential_is_credential_learn_supported_ExpectAndReturn(type, supports_cl);
     }

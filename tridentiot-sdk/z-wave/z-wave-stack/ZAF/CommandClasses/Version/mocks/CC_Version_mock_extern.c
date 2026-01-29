@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2022 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file CC_Version_mock_extern.c
  * @copyright 2022 Silicon Laboratories Inc.
@@ -10,8 +17,8 @@
 #define MOCK_FILE "CC_Version_mock_extern.c"
 
 void CC_Version_GetFirmwareVersion_handler(
-    uint8_t firmwareTargetIndex,
-    VG_VERSION_REPORT_V2_VG* pVariantgroup)
+  uint8_t firmwareTargetIndex,
+  VG_VERSION_REPORT_V2_VG* pVariantgroup)
 {
   mock_t * pMock;
 

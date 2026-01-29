@@ -21,10 +21,13 @@
 #include "cc_user_credential_io_config.h"
 #include "cc_user_credential_validation.h"
 #include "cc_user_credential_operations.h"
-#include <string.h>
 #include "Assert.h"
 //#define DEBUGPRINT
 #include "DebugPrint.h"
+
+// Language includes last
+#include <stdlib.h>
+#include <string.h>
 
 /****************************************************************************/
 /*                           STATIC PARAMETER CHECK                         */
@@ -52,6 +55,9 @@ STATIC_ASSERT(CC_USER_CREDENTIAL_MAX_DATA_LENGTH_PIN_CODE == 10,
 
 #define USER_CODE_REPORT_DATA_MAX_LENGTH \
   TX_DATA_MAX_DATA_SIZE - offsetof(ZW_USER_CODE_REPORT_1BYTE_FRAME, userCode1)
+
+  // Get rid of build warning
+extern size_t strnlen(const char * str, size_t len);
 
 /****************************************************************************/
 /*                            PRIVATE FUNCTIONS                             */

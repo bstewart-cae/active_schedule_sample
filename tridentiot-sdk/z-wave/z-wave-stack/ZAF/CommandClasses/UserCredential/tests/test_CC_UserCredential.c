@@ -73,9 +73,11 @@ void test_USER_CREDENTIAL_user_get(void)
   zaf_transport_rx_to_tx_options_Ignore();
 
   // Create expected outgoing frame
-  ZW_USER_REPORT_1BYTE_FRAME expectedOutput = {
+  uint8_t expectedOutput[sizeof(ZW_USER_REPORT_1BYTE_FRAME) - 1 + sizeof(name) - 1] = { 0 };
+  ZW_USER_REPORT_1BYTE_FRAME expectedOutputFixedFields = {
     .cmdClass = COMMAND_CLASS_USER_CREDENTIAL,
     .cmd = USER_REPORT,
+    .userReportType = USER_REP_TYPE_RESPONSE_TO_GET,
     .nextUserUniqueIdentifier1 = 0x00,
     .nextUserUniqueIdentifier2 = 0x08,
     .userModifierType = MODIFIER_TYPE_LOCALLY,
@@ -91,10 +93,11 @@ void test_USER_CREDENTIAL_user_get(void)
     .properties2 = 0x00,
     .userNameLength = user.name_length
   };
-  memcpy(&expectedOutput.userName1, name, user.name_length);
+  memcpy(expectedOutput, &expectedOutputFixedFields, sizeof(ZW_USER_REPORT_1BYTE_FRAME) - 1);
+  memcpy(expectedOutput + offsetof(ZW_USER_REPORT_1BYTE_FRAME, userName1), name, user.name_length);
   uint8_t expectedSize = sizeof(ZW_USER_REPORT_1BYTE_FRAME) - 1 + user.name_length;
 
-  zaf_transport_tx_ExpectWithArrayAndReturn((uint8_t *)&expectedOutput, 1, expectedSize, NULL, NULL, 1, true);
+  zaf_transport_tx_ExpectWithArrayAndReturn(expectedOutput, expectedSize, expectedSize, NULL, NULL, 1, true);
   zaf_transport_tx_IgnoreArg_callback();
   zaf_transport_tx_IgnoreArg_zaf_tx_options();
 
@@ -142,7 +145,7 @@ void test_USER_CREDENTIAL_user_set_valid_user_unique_identifier(void)
     = incomingFrame;
 
   // Set up mock calls
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(user_unique_identifier + 1); // Don't care, just needs to be bigger than the user_unique_identifier
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(user_unique_identifier + 1); // Don't care, just needs to be bigger than the user_unique_identifier
   cc_user_credential_get_max_length_of_user_name_ExpectAndReturn(40); // Ignore the max name length
   cc_user_credential_is_user_type_supported_ExpectAndReturn(USER_TYPE_GENERAL, true);
   cc_user_credential_is_credential_rule_supported_ExpectAndReturn(CREDENTIAL_RULE_SINGLE, true);
@@ -202,7 +205,7 @@ void test_USER_CREDENTIAL_UserSet_InvalidUniqueIdentifier_Zero(void)
 
   // Set up mock calls to simulate environment and expected behavior
   // These expectations might need adjustment based on your system's design on handling invalid identifiers.
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(0xFFFF); // Max valid User Unique Identifier
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(0xFFFF); // Max valid User Unique Identifier
   // Process command
   received_frame_status_t status = invoke_cc_handler_v2(&input.rxOptions, &input.frame.as_zw_application_tx_buffer, input.frameLength, NULL, 0);
 
@@ -237,7 +240,7 @@ void test_USER_SET_With_UserUniqueIdentifier_Greater_Than_Max_Should_Be_Ignored(
 
   // Expect the call to retrieve the max user unique identifiers and return a value lower than the one in the frame
   uint16_t maxSupportedIdentifiers = 0x00FF; // Example maximum
-  cc_user_credential_get_max_user_unique_idenfitiers_ExpectAndReturn(maxSupportedIdentifiers);
+  cc_user_credential_get_max_user_unique_identifiers_ExpectAndReturn(maxSupportedIdentifiers);
 
   // Process the command
   received_frame_status_t status = invoke_cc_handler_v2(
@@ -292,7 +295,7 @@ void test_USER_CREDENTIAL_user_remove_all_users(void)
   input.rxOptions.destNode.nodeId = 2;
 
   // Set up mock calls
-  cc_user_credential_get_max_user_unique_idenfitiers_IgnoreAndReturn(10); // Don't care, just needs to be bigger than the user_unique_identifier
+  cc_user_credential_get_max_user_unique_identifiers_IgnoreAndReturn(10); // Don't care, just needs to be bigger than the user_unique_identifier
   cc_user_credential_get_max_length_of_user_name_IgnoreAndReturn(40); // Ignore the max name length
   cc_user_credential_is_user_type_supported_ExpectAndReturn(USER_TYPE_GENERAL, true);
   cc_user_credential_is_credential_rule_supported_ExpectAndReturn(CREDENTIAL_RULE_SINGLE, true);
@@ -346,7 +349,7 @@ void test_USER_CREDENTIAL_user_remove_all_users(void)
   input2.rxOptions.destNode.nodeId = 2;
 
   // Set up mock calls
-  cc_user_credential_get_max_user_unique_idenfitiers_IgnoreAndReturn(10); // Don't care, just needs to be bigger than the user_unique_identifier
+  cc_user_credential_get_max_user_unique_identifiers_IgnoreAndReturn(10); // Don't care, just needs to be bigger than the user_unique_identifier
   cc_user_credential_get_max_length_of_user_name_IgnoreAndReturn(40); // Ignore the max name length
   cc_user_credential_is_user_type_supported_ExpectAndReturn(USER_TYPE_GENERAL, true);
   cc_user_credential_is_credential_rule_supported_ExpectAndReturn(CREDENTIAL_RULE_SINGLE, true);
@@ -387,6 +390,7 @@ void test_USER_CREDENTIAL_user_remove_all_users(void)
     .userUniqueIdentifier2 = 0x00,   // User Unique Identifier = 0 to indcate "remove all users"
     .userType = USER_TYPE_GENERAL,
     .properties2 = 0x00,   // User is not Active
+    .credentialRule = CREDENTIAL_RULE_SINGLE,
     .expiringTimeoutMinutes1 = 0x00,
     .expiringTimeoutMinutes2 = 0x00,   // Expiring timout = 0
     .properties3 = USER_NAME_ENCODING_STANDARD_ASCII,
@@ -440,7 +444,7 @@ void test_USER_CREDENTIAL_user_remove_all_users(void)
 
   // Verify report
   zaf_transport_rx_to_tx_options_Ignore();
-  zaf_transport_tx_ExpectWithArrayAndReturn((uint8_t *)&expected_report, 1, sizeof(expected_report) - 1, NULL, NULL, 0, true);
+  zaf_transport_tx_ExpectWithArrayAndReturn((uint8_t *)&expected_report, sizeof(expected_report) - 1, sizeof(expected_report) - 1, NULL, NULL, 0, true);
   zaf_transport_tx_IgnoreArg_zaf_tx_options();
 
   // Process command

@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2024 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * User Credential Command Class credential validation.
@@ -110,5 +117,33 @@ bool validate_admin_pin_code(u3c_admin_code_metadata_t * const data);
  * @return true if user name is valid for the given encoding.
  */
 bool validate_user_name_encoding(const uint8_t * p_name, uint8_t p_name_length, u3c_user_name_encoding p_name_encoding);
+
+/************************************************************
+ * User Credential v2 Additions
+ ***********************************************************/
+/**
+ * Validates Key Locker entry data prior to performing an IO operation.
+ *
+ * Intended to be called after the slot is validated and will assume that the
+ * information provided is valid.
+ *
+ * @param[in] p_entry_type Type of Key Locker entry
+ * @param[in] p_entry_slot Which slot index the data is going in
+ * @param[in] p_entry_data The data going in the slot
+ * @param[in] p_data_len   Length of the data going in the slot
+ */
+bool validate_key_locker_data(
+  const u3c_kl_slot_type_t p_entry_type,
+  const uint16_t p_entry_slot,
+  const uint8_t* const p_entry_data,
+  size_t p_data_len);
+
+/**
+ * Validates the key locker slot index and slot type prior to performing an IO operation.
+ *
+ * @param[in] p_entry_type Type of Key Locker entry
+ * @param[in] p_entry_slot Slot index of the entry
+ */
+bool validate_key_locker_slot(const u3c_kl_slot_type_t p_entry_type, const uint16_t p_entry_slot);
 
 #endif /* CC_USER_CREDENTIAL_VALIDATION_H */

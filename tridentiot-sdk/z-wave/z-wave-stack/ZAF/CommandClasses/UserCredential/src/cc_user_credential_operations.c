@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2023 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file
  * @brief Handler for Command Class User Credential.
@@ -222,7 +229,7 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_modify_user_and_report(
       p_user->modifier_type = MODIFIER_TYPE_DNE;
       p_user->modifier_node_id = 0;
       CC_UserCredential_UserReport_tx(
-        USER_REP_TYPE_MODIF_AGAINST_EMPTY, p_user, p_name, 0,
+        USER_REP_TYPE_MODIFY_AGAINST_EMPTY, p_user, p_name, 0,
         p_rx_options);
       break;
     }
@@ -519,8 +526,8 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_delete_credential_and_report(
 
 ZW_WEAK u3c_db_operation_result CC_UserCredential_move_credential_and_report(
   u3c_credential_type credential_type,
-  uint16_t source_credential_slot, uint16_t destination_uuid,
-  uint16_t destination_credential_slot, RECEIVE_OPTIONS_TYPE_EX * p_rx_options)
+  uint16_t credential_slot, uint16_t destination_uuid,
+  RECEIVE_OPTIONS_TYPE_EX * p_rx_options)
 {
   if (!p_rx_options) {
     assert(false);
@@ -530,11 +537,11 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_move_credential_and_report(
   u3c_db_operation_result operation_result;
   u3c_credential_metadata_t source_metadata = {
     .type = credential_type,
-    .slot = source_credential_slot
+    .slot = credential_slot
   };
   u3c_credential_metadata_t destination_metadata = {
     .uuid = destination_uuid,
-    .slot = destination_credential_slot
+    .slot = credential_slot
   };
 
   bool local_initiative = is_rx_frame_initiated_locally(p_rx_options);
@@ -542,9 +549,17 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_move_credential_and_report(
     fill_rx_frame_with_local(p_rx_options);
   }
 
+  // CC:0083.01.12.11.007: Destination User Unique Identifier must reference an existing User
+  if (U3C_DB_OPERATION_RESULT_SUCCESS != CC_UserCredential_get_user(destination_uuid, NULL, NULL)
+      && !local_initiative) {
+    CC_UserCredential_send_association_report(
+      &source_metadata, &destination_metadata, U3C_UCAR_STATUS_DESTINATION_USER_UNIQUE_IDENTIFIER_NONEXISTENT, p_rx_options);
+    return U3C_DB_OPERATION_RESULT_ERROR;
+  }
+
   /**
    * Attempt to execute the move operation. If the source Credential does not
-   * exist or the destination slot is occupied, send an error report.
+   * exist, send an error report.
    */
   operation_result = CC_UserCredential_move_credential(
     source_metadata.type, source_metadata.slot,
@@ -557,9 +572,6 @@ ZW_WEAK u3c_db_operation_result CC_UserCredential_move_credential_and_report(
       break;
     case U3C_DB_OPERATION_RESULT_FAIL_DNE:
       status = U3C_UCAR_STATUS_CREDENTIAL_SLOT_EMPTY;
-      break;
-    case U3C_DB_OPERATION_RESULT_FAIL_OCCUPIED:
-      status = U3C_UCAR_STATUS_CREDENTIAL_SLOT_INVALID;
       break;
     default:
       // Database error
@@ -590,9 +602,9 @@ ZW_WEAK bool CC_UserCredential_send_association_report(
 
   p_cmd->cmdClass                         = COMMAND_CLASS_USER_CREDENTIAL;
   p_cmd->cmd                              = USER_CREDENTIAL_ASSOCIATION_REPORT;
-  p_cmd->credentialType             = (uint8_t)p_source_metadata->type;
-  p_cmd->credentialSlot1            = (uint8_t)(p_source_metadata->slot >> 8); // MSB
-  p_cmd->credentialSlot2            = (uint8_t)p_source_metadata->slot; // LSB
+  p_cmd->credentialType                   = (uint8_t)p_source_metadata->type;
+  p_cmd->credentialSlot1                  = (uint8_t)(p_source_metadata->slot >> 8); // MSB
+  p_cmd->credentialSlot2                  = (uint8_t)p_source_metadata->slot; // LSB
   p_cmd->destinationUserUniqueIdentifier1 = (uint8_t)(p_destination_metadata->uuid >> 8); // MSB
   p_cmd->destinationUserUniqueIdentifier2 = (uint8_t)p_destination_metadata->uuid; // LSB
   p_cmd->userCredentialAssociationStatus  = (uint8_t)status;

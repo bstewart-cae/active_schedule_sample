@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug",
+            "armToolchainPath": "/home/bens/bin/SimplicityStudio_v5/developer/toolchains/gnu_arm/12.2.rel1_2023.7/bin",
+            "debuggerArgs": [],
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/T32CZ20.Debug/app/active_schedule_sample_dkncz20_usb_t32cz20.elf",
+            "request": "attach",
+            "type": "cortex-debug",
+            "rtos": "FreeRTOS",
+            "showDevDebugOutput": "raw",
+            "runToEntryPoint": "main",
+            "servertype": "jlink",
+            "device": "T32CZ20B",
+            "serialNumber": "900039516",
+        }
+    ]
+}

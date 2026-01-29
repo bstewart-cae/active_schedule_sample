@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2022 Silicon Laboratories Inc. <https://www.silabs.com/>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ */
+
 /**
  * @file CC_Version_mock.c
  * @copyright 2022 Silicon Laboratories Inc.
@@ -8,7 +15,6 @@
 #include <mock_control.h>
 
 #define MOCK_FILE "CC_Version_mock.c"
-
 
 received_frame_status_t CC_Version_handler(RECEIVE_OPTIONS_TYPE_EX *rxOpt, ZW_APPLICATION_TX_BUFFER *pCmd, uint8_t cmdLength)
 {
