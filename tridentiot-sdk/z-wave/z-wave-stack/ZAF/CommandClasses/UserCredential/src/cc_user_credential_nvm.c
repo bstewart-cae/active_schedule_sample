@@ -69,6 +69,11 @@ static uint16_t credentials_buffer_head = 0;
 static admin_pin_code_metadata_nvm_t admin_code = { 0 };
 
 /****************************************************************************/
+/*                            APPLICATION HOOKS                             */
+/****************************************************************************/
+
+static u3c_nvm_cbs_t m_cbs;
+/****************************************************************************/
 /*                               API FUNCTIONS                              */
 /****************************************************************************/
 
@@ -198,6 +203,13 @@ uint16_t u3c_nvm_get_max_users()
 {
   return max_users;
 } 
+
+void u3c_nvm_register_cbs(const u3c_nvm_cbs_t * const callbacks)
+{
+  if (NULL != callbacks) {
+    memcpy(&m_cbs, callbacks, sizeof(u3c_nvm_cbs_t));
+  }
+}
 
 /****************************************************************************/
 /*                             PRIVATE FUNCTIONS                            */
@@ -587,6 +599,11 @@ u3c_db_operation_result CC_UserCredential_add_user(
         return U3C_DB_OPERATION_RESULT_ERROR_IO;
       }
 
+      //  Kick user changed information up to application level if the application has registered a callback for it
+      if (NULL != m_cbs.user_changed) {
+        m_cbs.user_changed(user->unique_identifier, U3C_OPERATION_TYPE_ADD);
+      }
+
       // Update the descriptor table
       ordered_insert_user_descriptor(users, user, object_offset);
 
@@ -678,8 +695,11 @@ u3c_db_operation_result CC_UserCredential_delete_user(
         // Shift the elements to fill the gap
         memmove(&users[i], &users[i + 1], (n_users - i) * sizeof(user_descriptor_t));
       }
-      // Otherwise, simply consider its entry 'popped' from the array.
-
+      // Otherwise, simply consider its entry 'popped' from the array and kick user 
+      // changed information up to application level if the application has registered a callback for it
+      if (NULL != m_cbs.user_changed) {
+        m_cbs.user_changed(user_unique_identifier, U3C_OPERATION_TYPE_DELETE);
+      }
       // Update the descriptor table in NVM
       if (!u3c_nvm(U3C_WRITE, AREA_USER_DESCRIPTORS, 0, &users, 0)) {
         ++n_users;

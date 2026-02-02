@@ -1,5 +1,7 @@
 /*
  * SPDX-FileCopyrightText: 2024 Silicon Laboratories Inc. <https://www.silabs.com/>
+ * SPDX-FileCopyrightText: 2026 Z-Wave Alliance <https://www.z-wavealliance.org/>
+ * SPDX-FileCopyrightText: 2026 Card Access Engineering, LLC <https://www.caengineering.com/>
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -8,6 +10,10 @@
 /**
  * @file
  * Non-volatile memory implementation for Command Class User Credential I/O
+ * 
+ * @note Some application-level NVM behavior was introduced alongside U3Cv2.
+ *       This file now defines the callback structure for those hooks, and 
+ *       provides a framework for adding more.
  *
  * @copyright 2024 Silicon Laboratories Inc.
  */
@@ -98,8 +104,38 @@ typedef enum u3c_nvm_area_ {
 
 /*
  * Some database manipulation functions need to have exposure to multiple modules
- * depending on what particular features of the U3C are supported by the end device. 
+ * depending on what particular features of the U3C are supported by the end device.
  */
+
+ /* Function definitions for app layer hooks */
+
+/**
+ * @brief This callback is used when a User entry is manipulated in the database.
+ *        The application can then attach logic to run when a User entry is changed.
+ * 
+ * @note  The reason for this approach over a ZAF event is to ensure that all NVM operations
+ *        will run in the same context.
+ * 
+ * @param uuid User that was changed
+ * @param operation The operation performed on the user
+ */
+typedef void (*u3c_nvm_user_added_or_deleted_cb_t)(
+  const uint16_t uuid,
+  const u3c_operation_type_t operation
+);
+
+/**
+ * @brief These callbacks are available so that an application developer can attach
+ *        hooks to various database operations.
+ * 
+ * @note  The only reason that function pointers are used rather than weak, overrideable functions is because
+ *        they are intended to be implemented by the application, and that is not always clear to
+ *        users of the SDK. This also allows greater flexibility by changing callbacks at runtime as needed.
+ */
+typedef struct u3c_nvm_callbacks_ {
+  u3c_nvm_user_added_or_deleted_cb_t user_changed;
+} u3c_nvm_cbs_t;
+
 /****************************************************************************/
 /*                               API FUNCTIONS                              */
 /****************************************************************************/
@@ -118,7 +154,8 @@ bool u3c_nvm(
  * @brief  Get the file ID offset of a given User Unique ID.
  *
  * @param      uuid User Unique ID to find
- * @param[out] offset Page offset of the given user in the database region
+ * @param[out] offset Optional pointer in which to store the page offset of the given user 
+ *                    in the database region
  * @return     true if the user ID exists in the database.
  */
 bool u3c_nvm_get_user_offset_from_id(const uint16_t uuid, uint16_t * offset);
@@ -143,6 +180,12 @@ uint16_t u3c_nvm_get_num_creds(void);
  * @return Maximum number of User Slots allowed in the database
  */
 uint16_t u3c_nvm_get_max_users(void);
+
+/**
+ * @brief Called by application to register app-level callbacks for different events
+ *        within the u3c_nvm module.
+ */
+void u3c_nvm_register_cbs(const u3c_nvm_cbs_t * const callbacks);
 
 /* To add: Key Locker, Time, User Code, Migration, etc. */
 
