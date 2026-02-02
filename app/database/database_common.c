@@ -8,7 +8,7 @@
  * @file database_common.c
  * @author bstewart-cae
  * @brief This contains definitions for common database operations shared
- *        by multiple of 
+ *        by multiple application level modules.
  *
  * @copyright 2026 Card Access Engineering, LLC on behalf of the Z-Wave Alliance
  */
@@ -22,7 +22,7 @@ extern "C" {
 /****************************************************************************/
 #include "database_common.h"
 #include "app_schedules.h"
-#include "ZAF_nvm.h"
+#include "ZAF_nvm_app.h"
 
 /****************************************************************************/
 /*                      PRIVATE TYPES and DEFINITIONS                       */
@@ -42,6 +42,7 @@ extern "C" {
 
 bool app_nvm_init(void)
 {
+  ZAF_nvm_app_init();
   app_sch_initialize_handlers();
   return true;
 }
@@ -58,7 +59,7 @@ bool app_nvm(
   /**********************/
     case APP_NVM_AREA_MIGRATION_TABLE:
       file_base = APP_NVM_FILE_MIGRATION_TABLE;
-      size = sizeof(uint16_t);
+      size = 0; // FIXME: Store migration mapping information in here.
       offset = 0;
       break;
 
@@ -84,10 +85,10 @@ bool app_nvm(
   zpal_status_t nvm_result = ZPAL_STATUS_FAIL;
   switch (operation) {
     case U3C_READ:
-      nvm_result = ZAF_nvm_read(file_base + offset, pData, (size_t)size);
+      nvm_result = ZAF_nvm_app_write(file_base + offset, pData, (size_t)size);
       break;
     case U3C_WRITE:
-      nvm_result = ZAF_nvm_write(file_base + offset, pData, (size_t)size);
+      nvm_result = ZAF_nvm_app_write(file_base + offset, pData, (size_t)size);
       break;
     default:
       break;

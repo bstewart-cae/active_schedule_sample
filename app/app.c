@@ -16,7 +16,7 @@
 #include "zw_config_rf.h"
 #include "Assert.h"
 #include "MfgTokens.h"
-#define DEBUGPRINT
+//#define DEBUGPRINT
 #include "DebugPrint.h"
 #include "DebugPrintConfig.h"
 #include "AppTimer.h"
