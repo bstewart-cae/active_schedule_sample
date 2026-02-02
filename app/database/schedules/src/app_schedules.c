@@ -127,6 +127,10 @@ static uint16_t get_next_schedule_slot(
 static bool is_time_stamp_valid(const ascc_time_stamp_t * const timestamp);
 static bool is_time_fence_valid(const ascc_time_stamp_t * const start,
                                 const ascc_time_stamp_t * const end);
+static void user_changed(
+  const uint16_t uuid,
+  const u3c_operation_type_t operation
+);
 
 /****************************************************************************/
 /*                       EXPORTED FUNCTION DEFINITIONS                      */
@@ -145,6 +149,10 @@ void app_sch_initialize_handlers(void)
         .validate_schedule_slot = app_sch_validate_schedule_slot,
         .validate_target = app_sch_validate_target,
     };
+    u3c_nvm_cbs_t callbacks = {
+        .user_changed = user_changed
+    };
+    u3c_nvm_register_cbs(&callbacks);
     CC_ActiveSchedule_RegisterCallbacks(COMMAND_CLASS_USER_CREDENTIAL_V2, &stubs);
 }
 
@@ -305,12 +313,11 @@ ascc_op_result_t app_sch_get_schedule_state(const ascc_target_t * const target,
     ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
-    uint16_t offset = 0;
     if (state &&
-          target &&
-          u3c_nvm_get_user_offset_from_id(target->target_id, &offset)) {
+        target &&
+        u3c_nvm_get_user_offset_from_id(target->target_id, NULL)) {
         schedule_metadata_nvm_t schedule_data = { 0 };
-        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, offset, (void*)&schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, target->target_id, (void*)&schedule_data, sizeof(schedule_metadata_nvm_t))) {
             *state = schedule_data.scheduling_active;
             result.result = ASCC_OPERATION_SUCCESS;
         }
@@ -340,14 +347,13 @@ ascc_op_result_t app_sch_set_schedule_state(const ascc_target_t * const target,
     ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
-    uint16_t offset = 0;
-    if (target && u3c_nvm_get_user_offset_from_id(target->target_id, &offset)) {
+    if (target && u3c_nvm_get_user_offset_from_id(target->target_id, NULL)) {
         schedule_metadata_nvm_t schedule_data = { 0 };
-        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, target->target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
             // If 'enabled' value is not equal, then update and back up
             if (schedule_data.scheduling_active != state) {
                 schedule_data.scheduling_active = state;
-                if(!app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                if(!app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, target->target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
                     return result;
                 }
             }
@@ -387,14 +393,13 @@ ascc_op_result_t app_sch_get_schedule_data(const ascc_type_t schedule_type,
     ascc_op_result_t result = {
         .result = ASCC_OPERATION_FAIL
     };
-    uint16_t offset = 0;
     if (target
-            /* Overflow protection */
-            && slot <= app_sch_get_schedule_count(schedule_type)
-            && schedule
-            && u3c_nvm_get_user_offset_from_id(target->target_id, &offset)) {
+        /* Overflow protection */
+        && slot <= app_sch_get_schedule_count(schedule_type)
+        && schedule
+        && u3c_nvm_get_user_offset_from_id(target->target_id, NULL)) {
         schedule_metadata_nvm_t schedule_data = { 0 };
-        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, offset, (void*)&schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, target->target_id, (void*)&schedule_data, sizeof(schedule_metadata_nvm_t))) {
             uint16_t slot_tmp = slot == 0 ? get_first_schedule_slot(&schedule_data, schedule_type) :
                                            slot;
             if (schedule_type == ASCC_TYPE_DAILY_REPEATING) {
@@ -458,24 +463,22 @@ ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
                     result.working_time = 10; // 10 seconds as an example
                 }
             } else { // Erase all schedules for this target specifically
-                uint16_t offset = 0;
                 schedule_metadata_nvm_t schedule_data = { 0 };
-                if (u3c_nvm_get_user_offset_from_id(schedule->target.target_id, &offset) &&
-                      app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                if (u3c_nvm_get_user_offset_from_id(schedule->target.target_id, NULL) &&
+                      app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, schedule->target.target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
                     clear_all_schedules_for_user_by_type(&schedule_data, schedule->type);
                 }
                 // Back up updated mirror to NVM
-                if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, schedule->target.target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
                     result.result = ASCC_OPERATION_SUCCESS;
                     *next_slot = 0;
                 }
             }
         // Erase a specific schedule, 0 isn't allowed as a user
         } else if (schedule->slot_id != 0 && schedule->target.target_id != 0){
-            uint16_t offset = 0;
             schedule_metadata_nvm_t schedule_data = { 0 };
-            if (u3c_nvm_get_user_offset_from_id(schedule->target.target_id, &offset) &&
-                    app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            if (u3c_nvm_get_user_offset_from_id(schedule->target.target_id, NULL) &&
+                  app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, schedule->target.target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
                 // Update information in local flash mirror
                 // By clearing out the entire struct, we also clear the available bit
                 void * ptr = NULL;
@@ -490,7 +493,7 @@ ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
                 if (ptr) {
                     memset(ptr, 0x00, len);
                     // Back up updated mirror to NVM
-                    if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                    if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, schedule->target.target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
                         result.result = ASCC_OPERATION_SUCCESS;
                         *next_slot = get_next_schedule_slot(&schedule_data, schedule->type, schedule->slot_id);
                     }
@@ -499,10 +502,8 @@ ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
         }
     } else if (operation == ASCC_OP_TYPE_MODIFY &&
                schedule->slot_id != 0 && schedule->target.target_id != 0) {
-        uint16_t offset = 0;
         schedule_metadata_nvm_t schedule_data = { 0 };
-        if (u3c_nvm_get_user_offset_from_id(schedule->target.target_id, &offset) &&
-                app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, schedule->target.target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
             // Update information in local flash mirror
             if (schedule->type == ASCC_TYPE_DAILY_REPEATING) {
                 daily_repeating_nvm_t * tmp = &schedule_data.daily_repeating_schedules[schedule->slot_id-1];
@@ -512,7 +513,7 @@ ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
                 tmp->occupied = true;
             } else if (schedule->type == ASCC_TYPE_YEAR_DAY) {
                 year_day_nvm_t * tmp = &schedule_data.year_day_schedules[schedule->slot_id-1];
-                memcpy(&schedule_data.year_day_schedules[schedule->slot_id-1].schedule,
+                memcpy(&tmp->schedule,
                         &schedule->data.schedule.year_day,
                         sizeof(ascc_daily_repeating_schedule_t));
                 tmp->occupied = true;
@@ -520,7 +521,7 @@ ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
             // Enable scheduling for the target by default
             schedule_data.scheduling_active = true;
             // Back up updated mirror to NVM
-            if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, offset, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, schedule->target.target_id, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
                 result.result = ASCC_OPERATION_SUCCESS;
                 *next_slot = get_next_schedule_slot(&schedule_data, schedule->type, schedule->slot_id);
             }
@@ -667,6 +668,30 @@ static bool is_time_fence_valid(const ascc_time_stamp_t * const start,
         }
     }
     return result;
+}
+
+/**
+ * @brief When a user is deleted, the schedules attached to that user also need
+ *        to be deleted.
+ * 
+ * @param 
+ */
+static void user_changed(
+  const uint16_t uuid,
+  const u3c_operation_type_t operation
+)
+{
+    if (operation == U3C_OPERATION_TYPE_DELETE) {
+        schedule_metadata_nvm_t schedule_data = { 0 };
+        if(app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, uuid, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            schedule_data.scheduling_active = false;
+            schedule_data.uuid = 0;
+            clear_all_schedules_for_user_by_type(&schedule_data, ASCC_TYPE_YEAR_DAY);
+            clear_all_schedules_for_user_by_type(&schedule_data, ASCC_TYPE_DAILY_REPEATING);
+            // Back up updated mirror to NVM
+            app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, uuid, &schedule_data, sizeof(schedule_metadata_nvm_t));
+        }
+    }
 }
 
 #ifdef __cplusplus
