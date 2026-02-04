@@ -13,7 +13,7 @@
             "request": "attach",
             "type": "cortex-debug",
             "rtos": "FreeRTOS",
-            "showDevDebugOutput": "raw",
+            "showDevDebugOutput": "parsed",
             "runToEntryPoint": "main",
             "servertype": "jlink",
             "device": "T32CZ20B",

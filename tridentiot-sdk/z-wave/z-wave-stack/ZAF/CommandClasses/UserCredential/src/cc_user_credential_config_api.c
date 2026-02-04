@@ -362,9 +362,8 @@ ZW_WEAK uint16_t cc_user_credential_get_num_year_day_per_user(void)
 ZW_WEAK uint16_t cc_user_credential_get_num_daily_repeating_per_user(void)
 {
   return (CC_USER_CREDENTIAL_USER_SCHEDULING_SUPPORTED == 1) ? 
-          CC_USER_CREDENTIAL_YEAR_DAY_SCHEDULES_PER_USER : 0;
+          CC_USER_CREDENTIAL_DAILY_REPEATING_SCHEDULES_PER_USER : 0;
 }
-
 
 ZW_WEAK bool cc_user_credential_is_all_users_checksum_supported(void)
 {

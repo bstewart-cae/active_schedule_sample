@@ -429,7 +429,7 @@ static void pack_daily_repeating_report_frame(
   out_frame->cmdClass = COMMAND_CLASS_ACTIVE_SCHEDULE;
   out_frame->cmd = ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT;
   out_frame->properties1 = (uint8_t)(report_type
-                                     & ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT_PROPERTIES1_RESERVED_MASK);
+                                     & ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT_PROPERTIES1_REPORT_CODE_MASK);
   out_frame->targetCc = schedule->target.target_cc;
   out_frame->targetId1 = (uint8_t)((schedule->target.target_id >> 8) & 0xFF);
   out_frame->targetId2 = (uint8_t)((schedule->target.target_id) & 0xFF);
@@ -507,7 +507,7 @@ static void pack_year_day_report_frame(
   out_frame->cmdClass = COMMAND_CLASS_ACTIVE_SCHEDULE;
   out_frame->cmd = ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT;
   out_frame->properties1 = (uint8_t)(report_type
-                                     & ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_PROPERTIES1_RESERVED_MASK);
+                                     & ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_PROPERTIES1_REPORT_CODE_MASK);
   out_frame->targetCc = schedule->target.target_cc;
   out_frame->targetId1 = (uint8_t)((schedule->target.target_id >> 8) & 0xFF);
   out_frame->targetId2 = (uint8_t)((schedule->target.target_id) & 0xFF);
@@ -990,7 +990,7 @@ static received_frame_status_t CC_ActiveSchedule_DailyRepeatingGet_handler(cc_ha
                                                                            cc_handler_output_t * output)
 {
   uint16_t next_schedule_slot = 0;
-  ZW_ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_GET_FRAME *in_frame = &input->frame->ZW_ActiveScheduleYearDayScheduleGetFrame;
+  ZW_ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_GET_FRAME *in_frame = &input->frame->ZW_ActiveScheduleDailyRepeatingScheduleGetFrame;
   received_frame_status_t status = RECEIVED_FRAME_STATUS_FAIL;
   ascc_schedule_t schedule = {
     .target = ASCC_TARGET_FROM_FRAME(in_frame),
