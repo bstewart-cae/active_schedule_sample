@@ -26,3 +26,8 @@ void request_credential_from_user(void);
 void user_credential_app_event_handler(const uint8_t event, const void *data);
 
 void set_credential_learn_pin(const uint8_t * data, uint8_t length);
+
+/**
+ * @brief This function deletes the first user in the database to test local deletion and reporting behavior
+ */
+void delete_user_head();

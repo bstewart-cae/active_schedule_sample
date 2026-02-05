@@ -72,7 +72,6 @@ bool app_nvm(
   const app_nvm_operation_t operation, const app_nvm_area_t area, uint16_t offset, void* pData,
   uint16_t size);
 
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

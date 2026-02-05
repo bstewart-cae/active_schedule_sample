@@ -56,6 +56,13 @@ void request_credential_from_user(void)
     &credential_learn_steps
     );
 }
+void delete_user_head()
+{
+  uint16_t user = CC_UserCredential_get_next_user(0);
+  if (user != 0) {
+    CC_UserCredential_delete_user(user);
+  }  
+}
 
 void user_credential_app_event_handler(const uint8_t event, const void *data)
 {

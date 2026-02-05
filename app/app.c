@@ -199,6 +199,11 @@ zaf_event_distributor_app_event_manager(const uint8_t event)
       request_credential_from_user();
       break;
     }
+    case EVENT_APP_DELETE_USER_HEAD:
+    {
+      delete_user_head();
+      break;
+    }
     default:
       break;
   }
