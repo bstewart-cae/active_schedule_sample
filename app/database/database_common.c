@@ -85,7 +85,7 @@ bool app_nvm(
   zpal_status_t nvm_result = ZPAL_STATUS_FAIL;
   switch (operation) {
     case U3C_READ:
-      nvm_result = ZAF_nvm_app_write(file_base + offset, pData, (size_t)size);
+      nvm_result = ZAF_nvm_app_read(file_base + offset, pData, (size_t)size);
       break;
     case U3C_WRITE:
       nvm_result = ZAF_nvm_app_write(file_base + offset, pData, (size_t)size);

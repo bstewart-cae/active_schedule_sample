@@ -446,7 +446,7 @@ static void pack_daily_repeating_report_frame(
   out_frame->durationMinute = daily_repeating->duration_minute;
 
   /* Metadata information */
-  out_frame->properties1 = (uint8_t)(schedule->data.metadata_length
+  out_frame->properties2 = (uint8_t)(schedule->data.metadata_length
                                      & ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT_PROPERTIES2_METADATA_LENGTH_MASK);
   if (schedule->data.metadata_length > 0) {
     memcpy(&out_frame->metadata1, &schedule->data.metadata[0], schedule->data.metadata_length);

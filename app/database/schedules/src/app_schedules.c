@@ -42,6 +42,18 @@ extern "C" {
 /*                      PRIVATE TYPES and DEFINITIONS                       */
 /****************************************************************************/
 
+/*
+ * Verify that a non-zero number of schedules are supported if scheduling is
+ * reported as supported or no schedules are supported if scheduling is not supported
+ */
+STATIC_ASSERT(
+    !(((CC_USER_CREDENTIAL_YEAR_DAY_SCHEDULES_PER_USER + CC_USER_CREDENTIAL_DAILY_REPEATING_SCHEDULES_PER_USER) > 0) ^
+    (CC_USER_CREDENTIAL_USER_SCHEDULING_SUPPORTED == 1)),
+    STATIC_ASSERT_FAILED_Schedule_support_bit_and_number_of_supported_user_schedules_does_not_match
+);
+
+
+
 #define MAX_HOUR_COUNTER   (23)   ///< Hours will never be more than this value
 #define MAX_MINUTE_COUNTER (59)   ///< Minutes will never be more than this value
 #define MAX_MONTH_COUNTER  (12)   ///< Month value will never be more than this value
@@ -138,22 +150,27 @@ static void user_changed(
 
 void app_sch_initialize_handlers(void)
 {
-    const ascc_target_stubs_t stubs = {
-        .get_schedule_count = app_sch_get_schedule_count,
-        .get_schedule_data = app_sch_get_schedule_data,
-        .get_schedule_state = app_sch_get_schedule_state,
-        .get_target_count = app_sch_get_target_count,
-        .set_schedule_data = app_sch_set_schedule_data,
-        .set_schedule_state = app_sch_set_schedule_state,
-        .validate_schedule_data = app_sch_validate_schedule_data,
-        .validate_schedule_slot = app_sch_validate_schedule_slot,
-        .validate_target = app_sch_validate_target,
-    };
-    u3c_nvm_cbs_t callbacks = {
-        .user_changed = user_changed
-    };
-    u3c_nvm_register_cbs(&callbacks);
-    CC_ActiveSchedule_RegisterCallbacks(COMMAND_CLASS_USER_CREDENTIAL_V2, &stubs);
+    // At least one schedule needs to be supported per user, otherwise do not register. 
+    if (cc_user_credential_get_num_year_day_per_user() > 0 ||
+        cc_user_credential_get_num_daily_repeating_per_user() > 0) {
+        
+        const ascc_target_stubs_t stubs = {
+            .get_schedule_count = app_sch_get_schedule_count,
+            .get_schedule_data = app_sch_get_schedule_data,
+            .get_schedule_state = app_sch_get_schedule_state,
+            .get_target_count = app_sch_get_target_count,
+            .set_schedule_data = app_sch_set_schedule_data,
+            .set_schedule_state = app_sch_set_schedule_state,
+            .validate_schedule_data = app_sch_validate_schedule_data,
+            .validate_schedule_slot = app_sch_validate_schedule_slot,
+            .validate_target = app_sch_validate_target,
+        };
+        u3c_nvm_cbs_t callbacks = {
+            .user_changed = user_changed
+        };
+        u3c_nvm_register_cbs(&callbacks);
+        CC_ActiveSchedule_RegisterCallbacks(COMMAND_CLASS_USER_CREDENTIAL_V2, &stubs);
+    }
 }
 
 /**
@@ -274,11 +291,14 @@ bool app_sch_validate_schedule_data(const ascc_schedule_t * const schedule)
         const ascc_daily_repeating_schedule_t * dr_schedule =
             &schedule->data.schedule.daily_repeating;
         /* Make sure that all of the values are in appropriate ranges */
-        if (dr_schedule->duration_hour > MAX_HOUR_COUNTER ||
+        if (dr_schedule->weekday_mask == 0 || // At least one day must be selected
+              dr_schedule->duration_hour > MAX_HOUR_COUNTER ||
               dr_schedule->duration_minute > MAX_MINUTE_COUNTER ||
               dr_schedule->start_hour > MAX_HOUR_COUNTER ||
               dr_schedule->start_minute > MAX_MINUTE_COUNTER ||
-              dr_schedule->weekday_mask > MAX_WEEKDAY_MASK) {
+              dr_schedule->weekday_mask > MAX_WEEKDAY_MASK ||
+              (dr_schedule->duration_hour == 0 && // Users don't support zero duration
+              dr_schedule->duration_minute == 0)) {
             response = false;
         }
     } else if (schedule->type == ASCC_TYPE_YEAR_DAY) {
@@ -619,7 +639,7 @@ static bool is_time_stamp_valid(const ascc_time_stamp_t * const timestamp)
     uint8_t days = m_day_count[timestamp->month];
     // Make sure this isn't february during a leap year
     if (timestamp->month == FEB_INDEX &&
-          timestamp->year % LEAP_YEAR_CADENCE) {
+          ((timestamp->year % LEAP_YEAR_CADENCE) == 0)) {
         days = FEB_LEAP_YEAR_DAYS;
     }
     // Check remaining values
