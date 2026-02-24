@@ -229,9 +229,11 @@ bool app_sch_validate_target(const ascc_target_t * const target) {
         return false;
     } else if (target->target_id >= cc_user_credential_get_max_user_unique_identifiers()) {
         return false;
-    } else {
+    } else if (target != 0) {
         // Just return if the user exists in the database or not
         return u3c_nvm_get_user_offset_from_id(target->target_id,NULL);
+    } else {
+        return true;
     }
 }
 
