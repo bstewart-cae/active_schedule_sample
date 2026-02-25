@@ -33,10 +33,11 @@ extern "C" {
 /****************************************************************************/
 
 /* Note that Key Locker data is stored in ZAF memory with the Users and Credentials. */
-#define APP_NVM_FILE_MIGRATION_TABLE     (0)
-#define APP_NVM_FILE_MIGRATION_DATA_BASE (1)
-#define APP_NVM_FILE_MIGRATION_DATA_END  (5) // Up to 5 migration operations (Reserved for future use)
-#define APP_NVM_FILE_SCHEDULE_DATA_BASE  (6)
+#define APP_NVM_FILE_OFFSET              (100)
+#define APP_NVM_FILE_MIGRATION_TABLE     (APP_NVM_FILE_OFFSET)
+#define APP_NVM_FILE_MIGRATION_DATA_BASE (APP_NVM_FILE_OFFSET + 1)
+#define APP_NVM_FILE_MIGRATION_DATA_END  (APP_NVM_FILE_OFFSET + 5) // Up to 5 migration operations (Reserved for future use)
+#define APP_NVM_FILE_SCHEDULE_DATA_BASE  (APP_NVM_FILE_OFFSET + 6)
 #define APP_NVM_FILE_SCHEDULE_DATA_END \
   (APP_NVM_FILE_SCHEDULE_DATA_BASE +   \
    CC_USER_CREDENTIAL_MAX_USER_UNIQUE_IDENTIFIERS - 1) // One file for each user, base inclusive

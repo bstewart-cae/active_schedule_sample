@@ -42,7 +42,6 @@ extern "C" {
 
 bool app_nvm_init(void)
 {
-  ZAF_nvm_app_init();
   app_sch_initialize_handlers();
   return true;
 }

@@ -4,10 +4,12 @@
  * SPDX-FileCopyrightText: 2025 Card Access Engineering, LLC.
  */
 #include "app_credentials.h"
+#include "app_schedules.h"
 #include "CC_UserCredential.h"
 #include "cc_user_credential_io.h"
 #include "cc_user_credential_io_config.h"
 #include "cc_user_credential_config_api.h"
+#include "cc_user_credential_tx.h"
 #include "events.h"
 #include "CC_DoorLock.h"
 #include <string.h>
@@ -46,6 +48,9 @@ void initialize_user_credential_database(void)
       .data = pin_code
     };
     CC_UserCredential_add_credential(&credential);
+    // Add schedule initialization
+    app_sch_reset_schedules();
+    app_sch_init_schedule_db();
   }
 }
 
@@ -55,6 +60,32 @@ void request_credential_from_user(void)
     COMMAND_CLASS_USER_CREDENTIAL, CC_USER_CREDENTIAL_EVENT_LEARN_STEP_START,
     &credential_learn_steps
     );
+}
+
+bool delete_user_head_from_local()
+{
+  uint16_t uuid = CC_UserCredential_get_next_user(0);
+  if (uuid != 0) {
+    uint8_t username[CC_USER_CREDENTIAL_MAX_LENGTH_USER_NAME];
+    u3c_user_t user = { 0 };
+
+    CC_UserCredential_get_user(uuid, &user, username);
+    uint16_t next = CC_UserCredential_get_next_user(uuid);
+    if (U3C_DB_OPERATION_RESULT_SUCCESS == CC_UserCredential_delete_user(uuid)) {
+      RECEIVE_OPTIONS_TYPE_EX rx_opts = { 0 };
+      user.modifier_type = MODIFIER_TYPE_LOCALLY; 
+      user.modifier_node_id = 0xFF;
+      CC_UserCredential_UserReport_tx(
+        USER_REP_TYPE_DELETED,
+        &user,
+        username,
+        next,
+        &rx_opts
+      );
+    }
+    return true;
+  }
+  return false;
 }
 
 void user_credential_app_event_handler(const uint8_t event, const void *data)

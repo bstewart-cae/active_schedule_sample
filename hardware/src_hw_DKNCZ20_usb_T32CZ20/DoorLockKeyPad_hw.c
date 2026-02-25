@@ -9,6 +9,7 @@
 /// ***************************************************************************
 
 #include <apps_hw.h>
+#include "database_common.h"
 #include <DebugPrint.h>
 #include "CC_BinarySwitch.h"
 #include "SizeOf.h"
@@ -102,13 +103,31 @@ static u3c_event_data_validate_t user_credential_event_validate_data = {
 static int cli_cmd_app_battery(int  argc, char *argv[]);
 // User Credential command implementation
 static int user_credential_handle_set(int  argc, char *argv[]);
+/* User cmd functions */
+static int cli_cmd_app_user_delete(int  argc, char *argv[]);
+static int cli_cmd_app_schedule_delete(int  argc, char *argv[]);
 
+/* User specific sub-commands */
+TR_CLI_COMMAND_TABLE(user_specific_sub_commands) =
+{
+  { "delete", cli_cmd_app_user_delete, "Deletes the first user from the database if that user exists"},
+  TR_CLI_COMMAND_TABLE_END
+};
+
+/* Schedule specific sub-commands */
+TR_CLI_COMMAND_TABLE(schedule_specific_sub_commands) =
+{
+  { "delete", cli_cmd_app_schedule_delete, "delete <yd|dr> Deletes all schedules of the provided type from the first user in the database"},
+  TR_CLI_COMMAND_TABLE_END
+};
 
 // User credential commands cli table. to access them run:
 // application user_credential <command>
 TR_CLI_COMMAND_TABLE(user_credentials_specific_sub_commands) =
 {
-  { "handle_state",           user_credential_handle_set,   "handle_state <1/0>. <lock/unlock> door handle with User Code"},
+  { "handle_state", user_credential_handle_set,   "handle_state <1/0>. <lock/unlock> door handle with User Code"},
+  { "user",         TR_CLI_SUB_COMMANDS, TR_CLI_SUB_COMMAND_TABLE(user_specific_sub_commands) },
+  { "schedule",     TR_CLI_SUB_COMMANDS, TR_CLI_SUB_COMMAND_TABLE(schedule_specific_sub_commands) },
   TR_CLI_COMMAND_TABLE_END
 };
 
@@ -116,7 +135,7 @@ TR_CLI_COMMAND_TABLE(user_credentials_specific_sub_commands) =
 TR_CLI_COMMAND_TABLE(app_specific_commands) =
 {
   { "battery",         cli_cmd_app_battery, "Triggers a battery report"},
-  { "user_credential", TR_CLI_SUB_COMMANDS, TR_CLI_SUB_COMMAND_TABLE(user_credentials_specific_sub_commands) },
+  { "usercred", TR_CLI_SUB_COMMANDS, TR_CLI_SUB_COMMAND_TABLE(user_credentials_specific_sub_commands) },
   TR_CLI_COMMAND_TABLE_END
 };
 
@@ -165,6 +184,39 @@ static int user_credential_handle_set(int  argc, char *argv[])
   return 0;
 }
 
+/* User cmd functions */
+static int cli_cmd_app_user_delete(int  argc, __attribute__((unused))char *argv[])
+{
+  tr_cli_common_printf("Deleting first user from database\n",argc);
+  if(argc != 1) {
+    return -1;
+  }
+
+  zaf_event_distributor_enqueue_app_event_from_isr(EVENT_APP_DELETE_USER_HEAD);
+  return 0;
+}
+
+static int cli_cmd_app_schedule_delete(int  argc, char *argv[])
+{
+  if (argc == 1) {
+    tr_cli_common_printf("Please specify yd or dr\n");
+    return -2;
+  } else if (argc != 2) {
+    return -1;
+  }
+
+  if (0 == memcmp(argv[1], "yd", 2)) {
+    tr_cli_common_printf("Deleting year day schedules from first user\n");
+    zaf_event_distributor_enqueue_app_event_from_isr(EVENT_APP_DELETE_YD_SCHEDULES_HEAD);
+  } else if (0 == memcmp(argv[1], "dr", 2)) {
+    tr_cli_common_printf("Deleting daily repeating schedules from first user\n");
+    zaf_event_distributor_enqueue_app_event_from_isr(EVENT_APP_DELETE_DR_SCHEDULES_HEAD);
+  } else {
+    tr_cli_common_printf("Schedule type %s not recognized, please specify \'yd\' or \'dr\'\n",argv[0]);
+    return -2;
+  }
+  return 0;
+}
 
 #endif // #ifdef TR_CLI_ENABLED
 

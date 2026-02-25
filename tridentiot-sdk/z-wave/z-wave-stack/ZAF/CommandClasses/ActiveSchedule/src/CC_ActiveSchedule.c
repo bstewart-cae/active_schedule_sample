@@ -265,7 +265,7 @@ void CC_ActiveSchedule_YearDay_Schedule_Report_tx(
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
   send_report(&out_frame,
-              &m_tse_sched_yd_report,
+              &m_tse_sched_yd_report, // FIXME: Weird behavior here with TSE
               notify_lifeline);
 }
 

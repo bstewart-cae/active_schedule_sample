@@ -7,6 +7,8 @@ endif()
 
 # Set include directories required by optional functionality.
 set(INCLUDES
+  "../app" # Pull in application events for cli integration
+  "../app/database"
   "${ZW_SDK_ROOT}/platform/apps/common/"
   "${TRIDENT_SDK_ROOT}/framework/utility/cli/"
   "${TRIDENT_SDK_ROOT}/framework/utility/printf/"

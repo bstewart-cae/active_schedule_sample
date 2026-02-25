@@ -33,6 +33,7 @@
 #include "board_indicator.h"
 #include "app_hw.h"
 #include "app_credentials.h"
+#include "app_schedules.h"
 #include "database_common.h"
 #include "ZAF_ApplicationEvents.h"
 #include "zaf_event_distributor_soc.h"
@@ -197,6 +198,21 @@ zaf_event_distributor_app_event_manager(const uint8_t event)
     {
       // The Credential Learn process has started
       request_credential_from_user();
+      break;
+    }
+    case EVENT_APP_DELETE_USER_HEAD:
+    {
+      delete_user_head_from_local();
+      break;
+    }
+    case EVENT_APP_DELETE_DR_SCHEDULES_HEAD:
+    {
+      app_sch_local_delete_for_user(0, ASCC_TYPE_DAILY_REPEATING);
+      break;
+    }
+    case EVENT_APP_DELETE_YD_SCHEDULES_HEAD:
+    {
+      app_sch_local_delete_for_user(0, ASCC_TYPE_YEAR_DAY);
       break;
     }
     default:

@@ -40,9 +40,28 @@ extern "C" {
 void app_sch_initialize_handlers(void);
 
 /**
+ * @brief Helper function called to prepopulate a user's schedule slots on bootup
+ */
+void app_sch_init_schedule_db(void);
+
+/**
  * @brief Clear all stored schedule information
  */
 void app_sch_reset_schedules(void);
+
+/** 
+ * @brief Helper function that Gets a given user from the database and deletes all schedules of a 
+ *        given type for that user. If the user does not exist, nothing will happen.
+ * 
+ * @note  Providing a UUID of 0 in this case will find the first available user and delete
+ *        the schedules for the first user, rather than deleting schedules for all of them.
+ *
+ * @param uuid          User Unique identifier in question
+ * @param schedule_type Which type of schedule (Year Day/Daily Repeating) to clear from the user.
+ * 
+ * @returns true if successful, false otherwise.
+ */
+bool app_sch_local_delete_for_user(const uint16_t p_uuid, const ascc_type_t p_schedule_type);
 
 #ifdef __cplusplus
 }

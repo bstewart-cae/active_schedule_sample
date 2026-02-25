@@ -166,6 +166,24 @@ bool u3c_nvm(
   return nvm_result == ZPAL_STATUS_OK;
 }
 
+bool u3c_nvm_get_first_uuid(uint16_t * uuid)
+{
+  // Immediately return false if there are no users in the table
+  if (uuid == NULL || n_users == 0) {
+    return false;
+  }
+  // Read the User descriptor table from NVM
+  user_descriptor_t users[U3C_BUFFER_SIZE_USER_DESCRIPTORS];
+  memset(users, 0, sizeof(users));
+  if (!u3c_nvm(U3C_READ, AREA_USER_DESCRIPTORS, 0, &users, 0)) {
+    return false;
+  }
+
+  *uuid = users[0].unique_identifier;
+  // FIXME: Should never happen, something is wrong with the DB if this is ever true
+  return *uuid != 0; 
+}
+
 bool u3c_nvm_get_user_offset_from_id(const uint16_t uuid, uint16_t * offset)
 {
   // Read the User descriptor table from NVM

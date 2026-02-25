@@ -173,15 +173,89 @@ void app_sch_initialize_handlers(void)
     }
 }
 
-/**
- * @brief Clear all stored schedule information
- */
-void app_sch_reset_schedules(void) {
+void app_sch_init_schedule_db(void)
+{
+    // Intended to be called by initialization logic if DB is empty
+    ascc_schedule_t tmp_schedule = {
+        .slot_id = 1,
+        .target = {
+            .target_cc = COMMAND_CLASS_USER_CREDENTIAL,
+            .target_id = 1,
+        }
+    };
+    // Stick a YD Schedule on user 1
+    if (cc_user_credential_get_num_year_day_per_user() > 0) {
+        tmp_schedule.type = ASCC_TYPE_YEAR_DAY;
+        ascc_year_day_schedule_t * sch_data = &tmp_schedule.data.schedule.year_day;
+        memset(sch_data, 0, sizeof(ascc_year_day_schedule_t));
+        sch_data->start_year = 1923;
+        sch_data->start_month = 3;
+        sch_data->start_day = 4;
+        sch_data->start_hour = 12;
+        sch_data->start_minute = 25;
+        sch_data->stop_year = 2023;
+        sch_data->stop_month = 5;
+        sch_data->stop_day = 4; 
+        sch_data->stop_hour = 3;
+        sch_data->stop_minute = 23;
+        app_sch_set_schedule_data(ASCC_OP_TYPE_MODIFY, &tmp_schedule, NULL);
+    }
+
+    // Stick a DR schedule on user 1
+    if (cc_user_credential_get_num_daily_repeating_per_user > 0) {
+        tmp_schedule.type = ASCC_TYPE_DAILY_REPEATING;
+        ascc_daily_repeating_schedule_t * sch_data = &tmp_schedule.data.schedule.daily_repeating;
+        memset(sch_data, 0, sizeof(ascc_daily_repeating_schedule_t));
+        sch_data->duration_hour = 4; 
+        sch_data->duration_minute = 56;
+        sch_data->start_hour = 12;
+        sch_data->start_minute = 34;
+        sch_data->weekday_mask = (uint8_t)0b00111110; // Weekdays only
+        app_sch_set_schedule_data(ASCC_OP_TYPE_MODIFY, &tmp_schedule, NULL);
+    }
+}
+
+void app_sch_reset_schedules(void)
+{
     schedule_metadata_nvm_t data = { 0 };
     uint16_t max = u3c_nvm_get_max_users();
-    for(uint16_t i = 0; i < max; i++) {
+    for (uint16_t i = 0; i < max; i++) {
         app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, i ,&data, sizeof(schedule_metadata_nvm_t));
     }
+}
+
+bool app_sch_local_delete_for_user(const uint16_t p_uuid, const ascc_type_t p_schedule_type)
+{
+    uint16_t uuid;
+    // Special case for uuid of 0
+    if (p_uuid == 0 &&
+        !u3c_nvm_get_first_uuid(&uuid)) {
+        return false;
+    } else if (p_uuid != 0) {
+        uuid = p_uuid;
+    }
+    schedule_metadata_nvm_t schedule_data = { 0 };
+    if (u3c_nvm_get_user_offset_from_id(uuid, NULL) &&
+            app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        clear_all_schedules_for_user_by_type(&schedule_data, p_schedule_type);
+    }
+    // Back up updated mirror to NVM
+    if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        // Send unsolicited report to lifeline
+        static ascc_sched_event_data_t schedule_event_data; 
+        memset(&schedule_event_data, 0, sizeof(ascc_sched_event_data_t));
+        // Fill in required information for batch delete report
+        schedule_event_data.schedule.type = p_schedule_type;
+        schedule_event_data.report_type = p_schedule_type == ASCC_TYPE_DAILY_REPEATING ? 
+            ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT_REPORT_CODE_SCHEDULE_MODIFIED_EXTERNAL :
+            ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_REPORT_CODE_SCHEDULE_MODIFIED_EXTERNAL;
+        schedule_event_data.schedule.target.target_cc = COMMAND_CLASS_USER_CREDENTIAL_V2; 
+        schedule_event_data.schedule.target.target_id = uuid;
+        zaf_event_distributor_enqueue_cc_event(COMMAND_CLASS_ACTIVE_SCHEDULE, ASCC_APP_EVENT_ON_SET_SCHEDULE_COMPLETE, 
+            (void*)(&schedule_event_data));
+        return true;
+    }
+    return false; 
 }
 
 /****************************************************************************/

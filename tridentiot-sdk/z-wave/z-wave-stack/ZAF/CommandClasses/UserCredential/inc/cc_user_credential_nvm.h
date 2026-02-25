@@ -151,6 +151,15 @@ bool u3c_nvm(
   uint16_t size);
 
 /**
+ * @brief Retrieves the first occupied UUID in the database.
+ * 
+ * @param[out] uuid Pointer to variable where the uuid is stored, if it exists.
+ * @retval true if operation was successful and a user was found.
+ * @retval false if the database is empty or if the read operation fails.
+ */
+bool u3c_nvm_get_first_uuid(uint16_t * uuid);
+
+/**
  * @brief  Get the file ID offset of a given User Unique ID.
  *
  * @param      uuid User Unique ID to find
