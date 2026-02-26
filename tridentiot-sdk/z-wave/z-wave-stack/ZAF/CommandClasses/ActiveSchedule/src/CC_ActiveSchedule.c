@@ -146,8 +146,7 @@ static received_frame_status_t validate_and_set_schedule(ascc_op_type_t operatio
 
 static void send_report_tse(zaf_tx_options_t * p_tx_options,
                             void * p_data);
-static void send_report(const cc_handler_input_t * const in_report,
-                        cc_handler_input_t * tse_report,
+static void send_report(ascc_report_blob_t * const report,
                         const bool notify_lifeline);
 
 /* Inline helpers */
@@ -177,19 +176,14 @@ static struct {
  */
 static RECEIVE_OPTIONS_TYPE_EX * m_rx_opts;
 
-/**
- * @brief Cached TSE RX options for triggering
- */
-static RECEIVE_OPTIONS_TYPE_EX m_tse_current_rx_opts;
-
 /* Statically allocated output buffer for lifeline report transmission */
 static ZW_APPLICATION_TX_BUFFER m_yd_report_buf;
 static ZW_APPLICATION_TX_BUFFER m_dr_report_buf;
 static ZW_APPLICATION_TX_BUFFER m_se_report_buf;
 
-static cc_handler_input_t m_tse_sched_yd_report = { 0 };
-static cc_handler_input_t m_tse_sched_dr_report = { 0 };
-static cc_handler_input_t m_tse_sched_enable_report = { 0 };
+static ascc_report_blob_t m_tse_sched_yd_report = { 0 };
+static ascc_report_blob_t m_tse_sched_dr_report = { 0 };
+static ascc_report_blob_t m_tse_sched_enable_report = { 0 };
 
 /****************************************************************************
 *                  EXPORTED HEADER FUNCTION DEFINITIONS                    *
@@ -209,18 +203,18 @@ void CC_ActiveSchedule_Enable_Report_tx(const ascc_report_type_t report_type,
                                         const bool enabled,
                                         RECEIVE_OPTIONS_TYPE_EX * rx_opts)
 {
-  cc_handler_input_t out_frame = {
-    .rx_options = rx_opts,
-    .frame = &m_se_report_buf,
-  };
-
+  m_tse_sched_enable_report.frame = &m_se_report_buf;
+  if (NULL != rx_opts) {
+    m_tse_sched_enable_report.rx_options = *rx_opts;
+  } else {
+    memset(&m_tse_sched_enable_report.rx_options, 0, sizeof(RECEIVE_OPTIONS_TYPE_EX));
+  }
   pack_enable_report_frame(
     report_type,
     target,
     enabled,
-    (ZW_ACTIVE_SCHEDULE_ENABLE_REPORT_FRAME *)&out_frame.frame->
-    ZW_ActiveScheduleEnableReportFrame,
-    &out_frame.length);
+    (ZW_ACTIVE_SCHEDULE_ENABLE_REPORT_FRAME *)&m_se_report_buf.ZW_ActiveScheduleEnableReportFrame,
+    &m_tse_sched_enable_report.length);
 
   /**
    * Determine whether nodes in the the Lifeline association group must be
@@ -231,8 +225,7 @@ void CC_ActiveSchedule_Enable_Report_tx(const ascc_report_type_t report_type,
     (report_type == ASCC_REP_TYPE_MODIFY_EXTERNAL)
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
-  send_report(&out_frame,
-              &m_tse_sched_enable_report,
+  send_report(&m_tse_sched_enable_report,
               notify_lifeline);
 }
 
@@ -242,18 +235,21 @@ void CC_ActiveSchedule_YearDay_Schedule_Report_tx(
   const uint16_t next_schedule_slot,
   RECEIVE_OPTIONS_TYPE_EX * rx_opts)
 {
-  cc_handler_input_t out_frame = {
-    .rx_options = rx_opts,
-    .frame = &m_yd_report_buf
-  };
+  
+  m_tse_sched_yd_report.frame = &m_yd_report_buf;
+  if (NULL != rx_opts) {
+    m_tse_sched_yd_report.rx_options = *rx_opts;
+  } else {
+    memset(&m_tse_sched_yd_report.rx_options, 0, sizeof(RECEIVE_OPTIONS_TYPE_EX));
+  }
 
   pack_year_day_report_frame(
     report_type,
     schedule,
     next_schedule_slot,
-    (ZW_ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_1BYTE_FRAME *)&out_frame.frame->
-    ZW_ActiveScheduleYearDayScheduleReport1byteFrame,
-    &out_frame.length);
+    (ZW_ACTIVE_SCHEDULE_YEAR_DAY_SCHEDULE_REPORT_1BYTE_FRAME *)&m_yd_report_buf.
+      ZW_ActiveScheduleYearDayScheduleReport1byteFrame,
+    &m_tse_sched_yd_report.length);
 
   /**
    * Determine whether nodes in the the Lifeline association group must be
@@ -264,8 +260,7 @@ void CC_ActiveSchedule_YearDay_Schedule_Report_tx(
     (report_type == ASCC_REP_TYPE_MODIFY_EXTERNAL)
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
-  send_report(&out_frame,
-              &m_tse_sched_yd_report, // FIXME: Weird behavior here with TSE
+  send_report(&m_tse_sched_yd_report, // FIXME: Weird behavior here with TSE
               notify_lifeline);
 }
 
@@ -275,18 +270,20 @@ void CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
   const uint16_t next_schedule_slot,
   RECEIVE_OPTIONS_TYPE_EX * rx_opts)
 {
-  cc_handler_input_t out_frame = {
-    .rx_options = rx_opts,
-    .frame = &m_dr_report_buf,
-  };
+  m_tse_sched_dr_report.frame = &m_dr_report_buf;
+  if (NULL != rx_opts) {
+    m_tse_sched_dr_report.rx_options = *rx_opts;
+  } else {
+    memset(&m_tse_sched_dr_report.rx_options, 0, sizeof(RECEIVE_OPTIONS_TYPE_EX));
+  }
 
   pack_daily_repeating_report_frame(
     report_type,
     schedule,
     next_schedule_slot,
-    (ZW_ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT_1BYTE_FRAME *)&out_frame.frame->
-    ZW_ActiveScheduleDailyRepeatingScheduleReport1byteFrame,
-    &out_frame.length);
+    (ZW_ACTIVE_SCHEDULE_DAILY_REPEATING_SCHEDULE_REPORT_1BYTE_FRAME *)&m_dr_report_buf.
+      ZW_ActiveScheduleDailyRepeatingScheduleReport1byteFrame,
+    &m_tse_sched_dr_report.length);
 
   /**
    * Determine whether nodes in the the Lifeline association group must be
@@ -297,8 +294,7 @@ void CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
     (report_type == ASCC_REP_TYPE_MODIFY_EXTERNAL)
     || (report_type == ASCC_REP_TYPE_MODIFY_ZWAVE);
 
-  send_report(&out_frame,
-              &m_tse_sched_dr_report,
+  send_report(&m_tse_sched_dr_report,
               notify_lifeline);
 }
 
@@ -1084,7 +1080,7 @@ static received_frame_status_t CC_ActiveSchedule_handler(cc_handler_input_t * in
 static void send_report_tse(zaf_tx_options_t * p_tx_options,
                             void * p_data)
 {
-  cc_handler_input_t * report = (cc_handler_input_t *)p_data;
+  ascc_report_blob_t* report = (ascc_report_blob_t *)p_data;
   zaf_transport_tx(
     (uint8_t*)report->frame,
     report->length,
@@ -1097,17 +1093,14 @@ static void send_report_tse(zaf_tx_options_t * p_tx_options,
  * Sends an Active Schedule report.
  *
  * @param[in] report          Pointer to the report frame to be sent
- * @param[in] tse_report      Pointer to where a frame can be stored to be sent
- *                            later by the TSE, if needed
  * @param[in] notify_lifeline true if the nodes in the Lifeline association
  *                            group should receive the report
  */
-static void send_report(const cc_handler_input_t * const in_report,
-                        cc_handler_input_t * tse_report,
+static void send_report(ascc_report_blob_t * const report,
                         const bool notify_lifeline)
 {
   zaf_tx_options_t tx_options;
-  RECEIVE_OPTIONS_TYPE_EX *p_rx_options = in_report->rx_options;
+  RECEIVE_OPTIONS_TYPE_EX *p_rx_options = &report->rx_options;
   if (p_rx_options) {
     zaf_transport_rx_to_tx_options(p_rx_options, &tx_options);
   } else {
@@ -1131,13 +1124,12 @@ static void send_report(const cc_handler_input_t * const in_report,
      * notified via lifeline.
      */
     zaf_transport_tx(
-      (uint8_t*)in_report->frame, in_report->length, NULL, &tx_options);
+      (uint8_t*)report->frame, report->length, NULL, &tx_options);
   }
 
-  if (notify_lifeline && tse_report != NULL) {
+  if (notify_lifeline) {
     // Fill TSE report to be sent later on.
-    *tse_report = *in_report;
-    ZAF_TSE_Trigger(send_report_tse, tse_report, false);
+    ZAF_TSE_Trigger(send_report_tse, (void*)report, false);
   }
 }
 
@@ -1151,35 +1143,58 @@ static void ascc_event_handler(const uint8_t event,
 {
   switch (event) {
     case ASCC_APP_EVENT_ON_SET_SCHEDULE_COMPLETE: {
-      const ascc_sched_event_data_t* data = (ascc_sched_event_data_t *)p_data;
-      // Avoid const warning
-      m_tse_current_rx_opts = data->rx_opts;
+      ascc_sched_event_data_t * const data = (ascc_sched_event_data_t *)p_data;
       if (data->schedule.type == ASCC_TYPE_YEAR_DAY) {
         CC_ActiveSchedule_YearDay_Schedule_Report_tx(
           data->report_type,
           &data->schedule,
           data->next_schedule_slot,
-          &m_tse_current_rx_opts);
+          &data->rx_opts);
       } else if (data->schedule.type == ASCC_TYPE_DAILY_REPEATING) {
         CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
           data->report_type,
           &data->schedule,
           data->next_schedule_slot,
-          &m_tse_current_rx_opts);
+          &data->rx_opts);
       }
 
       break;
     }
     case ASCC_APP_EVENT_ON_SET_SCHEDULE_STATE_COMPLETE: {
-      RECEIVE_OPTIONS_TYPE_EX rx_opts = { 0 };
-      const ascc_sched_enable_event_data_t* data =
+      ascc_sched_enable_event_data_t* const data =
         (ascc_sched_enable_event_data_t *)p_data;
 
       CC_ActiveSchedule_Enable_Report_tx(data->report_type,
                                          &data->target,
                                          data->enabled,
-                                         &rx_opts);
+                                         data->rx_opts);
 
+      break;
+    }
+    case ASCC_APP_EVENT_ALL_SCHEDULES_CLEARED_FOR_TARGET: {
+      ascc_sched_clear_event_data_t * const data = 
+        (ascc_sched_clear_event_data_t*)p_data;
+        ascc_schedule_t schedule = {
+          .target = data->target,
+          .type = ASCC_TYPE_DAILY_REPEATING
+        };
+        // Send Daily Repeating
+        if (data->send_dr) {
+          CC_ActiveSchedule_DailyRepeating_Schedule_Report_tx(
+            data->report_type,
+            &schedule,
+            0x00,
+            NULL);
+        }
+        // Send Year Day
+        if (data->send_yd) {
+          schedule.type = ASCC_TYPE_YEAR_DAY;
+          CC_ActiveSchedule_YearDay_Schedule_Report_tx(
+            data->report_type,
+            &schedule,
+            0x00,
+            NULL);
+        }
       break;
     }
     case ASCC_APP_EVENT_ON_GET_SCHEDULE_CAPABILITIES_COMPLETE:

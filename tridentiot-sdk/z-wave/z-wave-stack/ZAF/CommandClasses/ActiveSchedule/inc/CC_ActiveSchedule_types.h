@@ -53,6 +53,7 @@ typedef enum _ascc_app_event_ {
   ASCC_APP_EVENT_ON_SET_SCHEDULE_COMPLETE,
   ASCC_APP_EVENT_ON_GET_SCHEDULE_STATE_COMPLETE,
   ASCC_APP_EVENT_ON_SET_SCHEDULE_STATE_COMPLETE,
+  ASCC_APP_EVENT_ALL_SCHEDULES_CLEARED_FOR_TARGET,
   ASCC_APP_EVENT_ON_SCHEDULE_STATE_CHANGE,                ///< End node signals to the stack that a
                                                           ///  schedule has updated to a new state.
                                                           ///  Currently unused, but desired.
@@ -161,6 +162,20 @@ typedef struct _ascc_daily_repeating_schedule {
   uint8_t duration_minute;
 } ascc_daily_repeating_schedule_t;
 
+/** 
+ * @brief TSE requires a pointer to a RECEIVE_OPTIONS_TYPE_EX at the initial memory location.
+ *        Passing a pointer to cc_handler_input_t into TSE_Trigger results in a double pointer
+ *        and undefined behavior.
+ * 
+ * @note  These are functionally equivalent to cc_handler_input_t but instead uses a full nested
+ *        struct for the RX options rather than a pointer to it.
+ */
+typedef struct ascc_report_blob {
+  RECEIVE_OPTIONS_TYPE_EX rx_options;
+  ZW_APPLICATION_TX_BUFFER * frame;
+  uint8_t length;
+} ascc_report_blob_t;
+
 /**
  * @brief Defines a common schedule structure for easier handling and manipulation
  */
@@ -194,9 +209,23 @@ typedef struct _ascc_sched_event_data {
 } ascc_sched_event_data_t;
 
 /**
+ * @brief Defines a helper struct to include schedule clear event data.
+ *        We only need the target information here. When all schedules are cleared, 
+ *        virtually everything is zeroed out.
+ */
+typedef struct _ascc_sched_clear_event_data {
+  RECEIVE_OPTIONS_TYPE_EX * rx_opts; ///< NULL if locally or externally triggered
+  ascc_report_type_t report_type;
+  ascc_target_t target;
+  bool send_yd;                      ///< Mark true if year day report needs to be sent.
+  bool send_dr;                      ///< Mark true if daily repeating report needs to be sent.
+} ascc_sched_clear_event_data_t;
+
+/**
  * @brief Defines a helper struct to include schedule enable event data.
  */
 typedef struct _ascc_sched_enable_event_data {
+  RECEIVE_OPTIONS_TYPE_EX * rx_opts;
   ascc_report_type_t report_type;
   ascc_target_t target;
   bool enabled;

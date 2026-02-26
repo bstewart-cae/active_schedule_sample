@@ -63,6 +63,16 @@ void app_sch_reset_schedules(void);
  */
 bool app_sch_local_delete_for_user(const uint16_t p_uuid, const ascc_type_t p_schedule_type);
 
+/** 
+ * @brief Helper function to flip the Enabled state for schedules on the first user in the 
+ *        database.
+ * 
+ * @param[out] state Pointer that is populated with the new enabled state of scheduling for the first user
+ *                   after the operation is successful.
+ * @returns true if the operation is successful, false otherwise 
+ */
+bool app_sch_toggle_enable(bool * state);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

@@ -106,6 +106,7 @@ static int user_credential_handle_set(int  argc, char *argv[]);
 /* User cmd functions */
 static int cli_cmd_app_user_delete(int  argc, char *argv[]);
 static int cli_cmd_app_schedule_delete(int  argc, char *argv[]);
+static int cli_cmd_app_schedule_enable(int  argc, char *argv[]);
 
 /* User specific sub-commands */
 TR_CLI_COMMAND_TABLE(user_specific_sub_commands) =
@@ -118,6 +119,7 @@ TR_CLI_COMMAND_TABLE(user_specific_sub_commands) =
 TR_CLI_COMMAND_TABLE(schedule_specific_sub_commands) =
 {
   { "delete", cli_cmd_app_schedule_delete, "delete <yd|dr> Deletes all schedules of the provided type from the first user in the database"},
+  { "enable", cli_cmd_app_schedule_enable, "Toggles enabling/disabling of schedules for the first user in the database"},
   TR_CLI_COMMAND_TABLE_END
 };
 
@@ -187,7 +189,7 @@ static int user_credential_handle_set(int  argc, char *argv[])
 /* User cmd functions */
 static int cli_cmd_app_user_delete(int  argc, __attribute__((unused))char *argv[])
 {
-  tr_cli_common_printf("Deleting first user from database\n",argc);
+  tr_cli_common_printf("Deleting first user from database\n");
   if(argc != 1) {
     return -1;
   }
@@ -215,6 +217,14 @@ static int cli_cmd_app_schedule_delete(int  argc, char *argv[])
     tr_cli_common_printf("Schedule type %s not recognized, please specify \'yd\' or \'dr\'\n",argv[0]);
     return -2;
   }
+  return 0;
+}
+
+static int cli_cmd_app_schedule_enable(__attribute__((unused))int  argc, __attribute__((unused))char *argv[])
+{
+  tr_cli_common_printf("Toggling Schedule Support on the first User in the database\n");
+
+  zaf_event_distributor_enqueue_app_event_from_isr(EVENT_APP_TOGGLE_SCHEDULE_ENABLE_HEAD);
   return 0;
 }
 

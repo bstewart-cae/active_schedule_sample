@@ -126,6 +126,7 @@ static ascc_op_result_t app_sch_get_schedule_data(const ascc_type_t schedule_typ
 static ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
                                                  const ascc_schedule_t * const schedule,
                                                  uint16_t * next_slot);
+static void clear_all_schedules_for_user(uint16_t uuid, bool send_reports);
 static void clear_all_schedules_for_user_by_type(
     schedule_metadata_nvm_t * schedule_data,
     const ascc_type_t schedule_type);
@@ -256,6 +257,35 @@ bool app_sch_local_delete_for_user(const uint16_t p_uuid, const ascc_type_t p_sc
         return true;
     }
     return false; 
+}
+
+bool app_sch_toggle_enable(bool * state)
+{
+    uint16_t uuid;
+    if (!state) {
+        return false; 
+    }
+    // Special case for uuid of 0
+    if (u3c_nvm_get_first_uuid(&uuid)) {
+        schedule_metadata_nvm_t schedule_data = { 0 };
+        if (app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+            //Flip bit
+            schedule_data.scheduling_active = !schedule_data.scheduling_active;
+            if (app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+                *state = schedule_data.scheduling_active;
+                static ascc_sched_enable_event_data_t event_data = { 0 };
+                event_data.enabled = schedule_data.scheduling_active;
+                event_data.report_type = ACTIVE_SCHEDULE_ENABLE_REPORT_REPORT_CODE_SCHEDULE_MODIFIED_EXTERNAL;
+                event_data.target.target_cc = COMMAND_CLASS_USER_CREDENTIAL_V2;
+                event_data.target.target_id = uuid;
+                event_data.rx_opts = NULL; // < This ensures lifeline transmission
+                zaf_event_distributor_enqueue_cc_event_from_isr(COMMAND_CLASS_ACTIVE_SCHEDULE, ASCC_APP_EVENT_ON_SET_SCHEDULE_STATE_COMPLETE,
+                    (void*)&event_data); 
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /****************************************************************************/
@@ -626,6 +656,40 @@ ascc_op_result_t app_sch_set_schedule_data(const ascc_op_type_t operation,
     return result;
 }
 
+static void clear_all_schedules_for_user(uint16_t uuid, bool send_local_reports)
+{
+    schedule_metadata_nvm_t schedule_data = { 0 };
+    if(app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
+        schedule_data.scheduling_active = false;
+        schedule_data.uuid = 0;
+        clear_all_schedules_for_user_by_type(&schedule_data, ASCC_TYPE_YEAR_DAY);
+        clear_all_schedules_for_user_by_type(&schedule_data, ASCC_TYPE_DAILY_REPEATING);
+        // Back up updated mirror to NVM
+        app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t));
+        if (send_local_reports) {
+            /*
+             * This function, when called from the radio context, is handled as part of a
+             * larger transaction and Z-Wave Modified reports will be sent later. 
+             * 
+             * We only need to handle report TX when the schedules are modified locally.
+             */
+            static ascc_sched_clear_event_data_t event_data = { 0 };
+            event_data.report_type = ASCC_REP_TYPE_MODIFY_EXTERNAL;
+            event_data.target.target_cc = COMMAND_CLASS_USER_CREDENTIAL_V2;
+            event_data.target.target_id = uuid;
+            event_data.send_dr = cc_user_credential_get_num_daily_repeating_per_user();
+            event_data.send_yd = cc_user_credential_get_num_year_day_per_user();
+            event_data.rx_opts = NULL;
+            // Use events to ensure that TX transmits are called within the ZAF context.
+            zaf_event_distributor_enqueue_cc_event_from_isr(
+                COMMAND_CLASS_ACTIVE_SCHEDULE,
+                ASCC_APP_EVENT_ALL_SCHEDULES_CLEARED_FOR_TARGET,
+                &event_data
+            );
+        }
+    }
+}
+
 /**
  * @brief Clears all schedules for a given block of metadata and schedule type
  *
@@ -770,7 +834,8 @@ static bool is_time_fence_valid(const ascc_time_stamp_t * const start,
  * @brief When a user is deleted, the schedules attached to that user also need
  *        to be deleted.
  * 
- * @param 
+ * @param uuid User in question
+ * @param operation The operation that the user underwent
  */
 static void user_changed(
   const uint16_t uuid,
@@ -778,14 +843,12 @@ static void user_changed(
 )
 {
     if (operation == U3C_OPERATION_TYPE_DELETE) {
-        schedule_metadata_nvm_t schedule_data = { 0 };
-        if(app_nvm(U3C_READ, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t))) {
-            schedule_data.scheduling_active = false;
-            schedule_data.uuid = 0;
-            clear_all_schedules_for_user_by_type(&schedule_data, ASCC_TYPE_YEAR_DAY);
-            clear_all_schedules_for_user_by_type(&schedule_data, ASCC_TYPE_DAILY_REPEATING);
-            // Back up updated mirror to NVM
-            app_nvm(U3C_WRITE, APP_NVM_AREA_SCHEDULE_DATA, uuid-1, &schedule_data, sizeof(schedule_metadata_nvm_t));
+        clear_all_schedules_for_user(uuid,false);
+    } else if (operation == U3C_OPERATION_TYPE_MODIFY) {
+        u3c_user_t user = { 0 };
+        CC_UserCredential_get_user(uuid, &user, NULL);
+        if (user.type == USER_TYPE_EXPIRING) {
+            clear_all_schedules_for_user(uuid, true);
         }
     }
 }

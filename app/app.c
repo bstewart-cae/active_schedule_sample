@@ -215,6 +215,14 @@ zaf_event_distributor_app_event_manager(const uint8_t event)
       app_sch_local_delete_for_user(0, ASCC_TYPE_YEAR_DAY);
       break;
     }
+    case EVENT_APP_TOGGLE_SCHEDULE_ENABLE_HEAD:
+    {
+      bool sch_state = false;
+      if (app_sch_toggle_enable(&sch_state)) {
+        DPRINTF("Schedules are now %s for first user", sch_state ? "enabled" : "disabled");
+      }
+      break;
+    }
     default:
       break;
   }
